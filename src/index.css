@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@theme {
+  /* ─── Lovify warm palette (matches lovifymusic) ─── */
+  --color-background: hsl(38 100% 97.6%);
+  --color-foreground: hsl(24 12% 14%);
+  --color-card: hsl(25 100% 97%);
+  --color-card-foreground: hsl(24 12% 14%);
+  --color-popover: hsl(25 100% 97%);
+  --color-popover-foreground: hsl(24 12% 14%);
+  --color-primary: hsl(24 10% 14%);
+  --color-primary-foreground: hsl(30 100% 99%);
+  --color-secondary: hsl(30 17% 95%);
+  --color-secondary-foreground: hsl(24 10% 14%);
+  --color-muted: hsl(30 8% 93%);
+  --color-muted-foreground: hsl(40 6% 38%);
+  --color-tertiary: hsl(27 7% 48%);
+  --color-tertiary-foreground: hsl(30 100% 99%);
+  --color-accent: hsl(15 85% 60%);
+  --color-accent-foreground: hsl(0 0% 100%);
+  --color-destructive: hsl(9 98% 47%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-success: hsl(142 76% 36%);
+  --color-warning: hsl(38 92% 50%);
+  --color-border: hsl(30 15% 92%);
+  --color-input: hsl(30 15% 92%);
+  --color-ring: hsl(15 85% 60%);
+
+  /* ─── Sidebar (warm dark brown) ─── */
+  --color-sidebar-bg: hsl(24 10% 14%);
+  --color-sidebar-foreground: hsl(30 30% 85%);
+  --color-sidebar-muted: hsl(24 10% 20%);
+  --color-sidebar-accent: hsl(15 85% 60%);
+  --color-sidebar-border: hsl(24 8% 22%);
+
+  /* ─── Chart colors ─── */
+  --color-chart-1: hsl(20 90% 55%);
+  --color-chart-2: hsl(15 85% 60%);
+  --color-chart-3: hsl(142 76% 36%);
+  --color-chart-4: hsl(45 80% 55%);
+  --color-chart-5: hsl(10 75% 50%);
+
+  /* ─── Radius (matches lovifymusic: 1rem base) ─── */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+}
+
+body {
+  font-family: "Montserrat", "DM Sans", system-ui, -apple-system, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+/* ─── Utility classes from lovifymusic ─── */
+.shadow-soft {
+  box-shadow: 0 4px 20px hsl(24 12% 14% / 0.05),
+              0 2px 8px hsl(24 12% 14% / 0.03);
+}
+
+.shadow-dreamy {
+  box-shadow: 0 8px 32px hsl(24 10% 14% / 0.1),
+              0 4px 16px hsl(24 12% 14% / 0.05);
+}
+
+.bg-gradient-warm {
+  background: linear-gradient(180deg, hsl(25 100% 97%) 0%, hsl(15 80% 90%) 50%, hsl(25 90% 85%) 100%);
+}
+
+.bg-gradient-soft {
+  background: linear-gradient(180deg, hsl(38 100% 97.6%) 0%, hsl(25 100% 97%) 100%);
+}
