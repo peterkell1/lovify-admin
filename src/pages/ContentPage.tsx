@@ -1,21 +1,47 @@
-import { Card, CardContent } from '@/components/ui/card'
-import { Music } from 'lucide-react'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
+import { ContentSongsTab } from '@/components/content/ContentSongsTab'
+import { ContentVisionsTab } from '@/components/content/ContentVisionsTab'
+import { ContentVideosTab } from '@/components/content/ContentVideosTab'
+
+const tabs = [
+  { id: 'songs', label: 'Songs' },
+  { id: 'visions', label: 'Visions' },
+  { id: 'videos', label: 'Mind Movies' },
+] as const
+
+type TabId = (typeof tabs)[number]['id']
 
 export default function ContentPage() {
+  const [activeTab, setActiveTab] = useState<TabId>('songs')
+
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Content</h1>
-        <p className="text-tertiary text-sm mt-1">Browse and manage songs, visions, and videos</p>
+        <p className="text-tertiary text-sm mt-1">Browse and manage all user-generated content</p>
       </div>
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-20">
-          <div className="h-14 w-14 rounded-2xl bg-accent/10 text-accent flex items-center justify-center mb-4">
-            <Music className="h-7 w-7" />
-          </div>
-          <p className="text-tertiary font-medium">Content management coming in Phase 3</p>
-        </CardContent>
-      </Card>
+
+      <div className="flex gap-1 bg-secondary rounded-xl p-1 w-fit">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer',
+              activeTab === tab.id
+                ? 'bg-card text-foreground shadow-soft'
+                : 'text-tertiary hover:text-foreground'
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'songs' && <ContentSongsTab />}
+      {activeTab === 'visions' && <ContentVisionsTab />}
+      {activeTab === 'videos' && <ContentVideosTab />}
     </div>
   )
 }

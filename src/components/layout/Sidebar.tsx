@@ -19,7 +19,7 @@ const navItems = [
   { to: '/users', icon: Users, label: 'Users' },
   { to: '/content', icon: Music, label: 'Content' },
   { to: '/finance', icon: DollarSign, label: 'Finance' },
-  { to: '/moderation', icon: Shield, label: 'Moderation' },
+  // { to: '/moderation', icon: Shield, label: 'Moderation' }, // TODO: enable when moderate-prompt edge function is fixed
   { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/audit', icon: ClipboardList, label: 'Audit Log' },
   { to: '/settings', icon: Settings, label: 'Settings' },
