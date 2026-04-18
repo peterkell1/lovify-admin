@@ -20,29 +20,39 @@ export function useAdminAuth() {
         })
         if (mounted) {
           store.setIsAdmin(!error && data === true)
-          store.setInitialized()
         }
       } catch {
-        if (mounted) {
-          store.setIsAdmin(false)
-          store.setInitialized()
-        }
+        if (mounted) store.setIsAdmin(false)
+      } finally {
+        if (mounted) store.setInitialized()
       }
     }
 
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
 
-      if (!session?.user) {
+        if (!session?.user) {
+          if (mounted) store.clear()
+          return
+        }
+
+        if (mounted) store.setUser(session.user)
+        await verifyAdmin(session.user.id)
+      } catch {
+        // If getSession fails, clear everything
         if (mounted) store.clear()
-        return
       }
-
-      if (mounted) store.setUser(session.user)
-      await verifyAdmin(session.user.id)
     }
 
     init()
+
+    // Safety timeout — if init hangs for more than 8 seconds, force initialized
+    const timeout = setTimeout(() => {
+      if (mounted && store.initializing) {
+        store.setInitialized()
+      }
+    }, 8000)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -53,7 +63,6 @@ export function useAdminAuth() {
           return
         }
 
-        // SIGNED_IN or TOKEN_REFRESHED
         if (mounted) store.setUser(session.user)
         verifyAdmin(session.user.id)
       }
@@ -61,6 +70,7 @@ export function useAdminAuth() {
 
     return () => {
       mounted = false
+      clearTimeout(timeout)
       subscription.unsubscribe()
     }
   }, [])
@@ -68,7 +78,6 @@ export function useAdminAuth() {
   const login = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
-    // The onAuthStateChange SIGNED_IN listener handles the rest
   }
 
   const logout = async () => {

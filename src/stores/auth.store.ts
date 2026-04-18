@@ -5,11 +5,12 @@ import type { User } from '@supabase/supabase-js'
 interface AuthState {
   user: User | null
   isAdmin: boolean
-  // true only on the very first load before we know anything
   initializing: boolean
+  _hydrated: boolean
   setUser: (user: User | null) => void
   setIsAdmin: (isAdmin: boolean) => void
   setInitialized: () => void
+  setHydrated: () => void
   clear: () => void
 }
 
@@ -19,19 +20,27 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAdmin: false,
       initializing: true,
+      _hydrated: false,
       setUser: (user) => set({ user }),
       setIsAdmin: (isAdmin) => set({ isAdmin }),
       setInitialized: () => set({ initializing: false }),
+      setHydrated: () => set({ _hydrated: true }),
       clear: () => set({ user: null, isAdmin: false, initializing: false }),
     }),
     {
       name: 'lovify-admin-auth',
-      // Persist user + isAdmin so returning users see UI instantly
       partialize: (state) => ({ user: state.user, isAdmin: state.isAdmin }),
       onRehydrateStorage: () => (state) => {
-        // If we have persisted user + admin, skip the loading state entirely
-        if (state?.user && state?.isAdmin) {
-          state.initializing = false
+        if (state) {
+          state._hydrated = true
+          // If we have persisted user + admin, skip loading
+          if (state.user && state.isAdmin) {
+            state.initializing = false
+          }
+          // If no user persisted, also skip loading — go to login
+          if (!state.user) {
+            state.initializing = false
+          }
         }
       },
     }

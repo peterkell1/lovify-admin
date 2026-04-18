@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useAICosts } from '@/hooks/use-finance'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatCard } from '@/components/dashboard/StatCard'
-import { Spinner } from '@/components/ui/spinner'
+import { SkeletonCard, SkeletonChart } from '@/components/ui/skeleton'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Cpu, DollarSign, Layers, Activity } from 'lucide-react'
@@ -76,7 +76,14 @@ export function AICostsTab() {
   }, [costs])
 
   if (isLoading || !analytics) {
-    return <div className="flex justify-center py-20"><Spinner className="h-8 w-8" /></div>
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+        <SkeletonChart />
+      </div>
+    )
   }
 
   const tooltipStyle = {

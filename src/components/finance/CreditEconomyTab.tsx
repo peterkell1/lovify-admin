@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Spinner } from '@/components/ui/spinner'
+import { SkeletonCard } from '@/components/ui/skeleton'
 import { Wallet, ArrowUpCircle, ArrowDownCircle, Layers } from 'lucide-react'
 import { formatNumber } from '@/lib/utils'
 
@@ -11,7 +11,11 @@ export function CreditEconomyTab() {
   const { data, isLoading } = useCreditEconomy(30)
 
   if (isLoading || !data) {
-    return <div className="flex justify-center py-20"><Spinner className="h-8 w-8" /></div>
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+      </div>
+    )
   }
 
   const netFlow = data.totalGranted - data.totalConsumed

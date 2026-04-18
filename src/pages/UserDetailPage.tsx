@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton, SkeletonCard } from '@/components/ui/skeleton'
 import { formatDate, formatNumber } from '@/lib/utils'
 import { ArrowLeft, Plus, Music, ImageIcon, CreditCard, Zap, Film, Play, Clock, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
@@ -40,8 +40,30 @@ export default function UserDetailPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner className="h-8 w-8" />
+      <div className="space-y-6">
+        {/* Header skeleton */}
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10 rounded-lg" />
+          <div className="flex items-center gap-3 flex-1">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-36 rounded-lg" />
+        </div>
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+        {/* Info + Sub skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Skeleton className="h-52 rounded-xl" />
+          <Skeleton className="h-52 rounded-xl" />
+        </div>
+        {/* Table skeleton */}
+        <Skeleton className="h-64 rounded-xl" />
       </div>
     )
   }

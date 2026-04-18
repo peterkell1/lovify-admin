@@ -6,7 +6,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Spinner } from '@/components/ui/spinner'
+import { SkeletonTableRow } from '@/components/ui/skeleton'
 import { Dialog, DialogHeader, DialogTitle, DialogContent } from '@/components/ui/dialog'
 import { formatDate } from '@/lib/utils'
 import { Shield, AlertTriangle, Search, Eye, Ban, Layers } from 'lucide-react'
@@ -135,7 +135,7 @@ export default function ModerationPage() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex justify-center py-16"><Spinner className="h-8 w-8" /></div>
+            <table className="w-full"><tbody>{Array.from({ length: 5 }).map((_, i) => <SkeletonTableRow key={i} cols={6} />)}</tbody></table>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="h-14 w-14 rounded-2xl bg-success/10 text-success flex items-center justify-center mb-4">

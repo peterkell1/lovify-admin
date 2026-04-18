@@ -5,7 +5,7 @@ import { useToggleContentVisibility } from '@/hooks/use-users'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
-import { Spinner } from '@/components/ui/spinner'
+import { SkeletonContentGrid } from '@/components/ui/skeleton'
 import { formatDate } from '@/lib/utils'
 import { ChevronLeft, ChevronRight, Eye, EyeOff, Film, Play, Clock } from 'lucide-react'
 import { toast } from 'sonner'
@@ -44,7 +44,7 @@ export function ContentVideosTab() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20"><Spinner className="h-8 w-8" /></div>
+        <SkeletonContentGrid count={8} />
       ) : videos.length === 0 ? (
         <div className="text-center py-20 text-tertiary">No mind movies found</div>
       ) : (

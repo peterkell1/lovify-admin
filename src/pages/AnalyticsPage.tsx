@@ -1,6 +1,6 @@
 import { useOnboardingFunnel, useUserSegments, useGenerationHealth } from '@/hooks/use-analytics'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton, SkeletonChart } from '@/components/ui/skeleton'
 import { formatNumber } from '@/lib/utils'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -24,7 +24,16 @@ export default function AnalyticsPage() {
   const isLoading = funnelLoading || segLoading || genLoading
 
   if (isLoading) {
-    return <div className="flex justify-center py-20"><Spinner className="h-8 w-8" /></div>
+    return (
+      <div className="space-y-6">
+        <div><Skeleton className="h-7 w-32" /><Skeleton className="h-4 w-64 mt-2" /></div>
+        <SkeletonChart />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Skeleton className="h-52 rounded-xl" />
+          <Skeleton className="h-52 rounded-xl" />
+        </div>
+      </div>
+    )
   }
 
   return (

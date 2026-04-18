@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
-import { Spinner } from '@/components/ui/spinner'
+import { SkeletonUserRow } from '@/components/ui/skeleton'
 import { formatDate, formatNumber } from '@/lib/utils'
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -57,12 +57,6 @@ export default function UsersPage() {
       </div>
 
       {/* Table */}
-      {isLoading ? (
-        <div className="flex items-center justify-center h-48">
-          <Spinner className="h-8 w-8" />
-        </div>
-      ) : (
-        <>
           <Table>
             <TableHeader>
               <TableRow>
@@ -73,7 +67,9 @@ export default function UsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.length === 0 ? (
+              {isLoading ? (
+                Array.from({ length: 8 }).map((_, i) => <SkeletonUserRow key={i} />)
+              ) : users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-tertiary py-12">
                     No users found
@@ -140,8 +136,6 @@ export default function UsersPage() {
               </div>
             </div>
           )}
-        </>
-      )}
     </div>
   )
 }

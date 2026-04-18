@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
-import { Spinner } from '@/components/ui/spinner'
+import { SkeletonContentGrid } from '@/components/ui/skeleton'
 import { formatDate } from '@/lib/utils'
 import { Search, ChevronLeft, ChevronRight, Eye, EyeOff, ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
@@ -49,7 +49,7 @@ export function ContentVisionsTab() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20"><Spinner className="h-8 w-8" /></div>
+        <SkeletonContentGrid count={12} />
       ) : visions.length === 0 ? (
         <div className="text-center py-20 text-tertiary">No visions found</div>
       ) : (

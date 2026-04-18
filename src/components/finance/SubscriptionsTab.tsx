@@ -6,7 +6,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
-import { Spinner } from '@/components/ui/spinner'
+import { SkeletonUserRow } from '@/components/ui/skeleton'
 import { cn, formatDate } from '@/lib/utils'
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 
@@ -54,7 +54,7 @@ export function SubscriptionsTab() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex justify-center py-16"><Spinner className="h-8 w-8" /></div>
+            <table className="w-full"><tbody>{Array.from({ length: 6 }).map((_, i) => <SkeletonUserRow key={i} />)}</tbody></table>
           ) : (
             <Table>
               <TableHeader>

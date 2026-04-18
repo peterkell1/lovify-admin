@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useRevenueChart } from '@/hooks/use-dashboard-stats'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   AreaChart,
   Area,
@@ -22,9 +22,7 @@ export function RevenueChart() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="h-64 flex items-center justify-center">
-            <Spinner />
-          </div>
+          <Skeleton className="h-[280px] w-full" />
         ) : !data || data.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-sm text-tertiary">
             No revenue data yet. This will populate once daily_pnl_stats has data.
