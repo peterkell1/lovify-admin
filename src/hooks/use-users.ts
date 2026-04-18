@@ -175,6 +175,9 @@ export function useToggleContentVisibility() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-user-detail'] })
+      queryClient.invalidateQueries({ queryKey: ['content-songs'] })
+      queryClient.invalidateQueries({ queryKey: ['content-visions'] })
+      queryClient.invalidateQueries({ queryKey: ['content-videos'] })
     },
   })
 }

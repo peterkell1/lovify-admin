@@ -4,11 +4,11 @@ import { useSubscriptions } from '@/hooks/use-finance'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Pagination } from '@/components/ui/pagination'
 import { Avatar } from '@/components/ui/avatar'
 import { SkeletonUserRow } from '@/components/ui/skeleton'
 import { cn, formatDate } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 
 const STATUS_FILTERS = ['all', 'active', 'trialing', 'canceled', 'past_due'] as const
 
@@ -123,20 +123,7 @@ export function SubscriptionsTab() {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-tertiary">Page {page} of {totalPages} ({total} total)</p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} total={total} pageSize={pageSize} onPageChange={setPage} />
     </div>
   )
 }

@@ -3,11 +3,11 @@ import { useAuditLog } from '@/hooks/use-audit-log'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { SkeletonTableRow } from '@/components/ui/skeleton'
+import { Pagination } from '@/components/ui/pagination'
 import { formatDate } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, Shield } from 'lucide-react'
+import { Shield } from 'lucide-react'
 
 const ACTION_FILTERS = [
   { value: '', label: 'All Actions' },
@@ -111,19 +111,7 @@ export default function AuditLogPage() {
         </CardContent>
       </Card>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-tertiary">Page {page} of {totalPages}</p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} total={total} pageSize={pageSize} onPageChange={setPage} />
     </div>
   )
 }

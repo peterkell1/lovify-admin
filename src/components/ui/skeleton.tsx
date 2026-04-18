@@ -76,12 +76,16 @@ export function SkeletonChart({ className }: SkeletonProps) {
   )
 }
 
-export function SkeletonContentGrid({ count = 6 }: { count?: number }) {
+export function SkeletonContentGrid({ count = 6, aspect = 'square' }: { count?: number; aspect?: 'square' | 'video' }) {
+  const gridCols = aspect === 'video'
+    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+    : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6'
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+    <div className={cn('grid gap-4', gridCols)}>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="border border-border rounded-xl bg-card overflow-hidden">
-          <Skeleton className="aspect-square w-full rounded-none" />
+          <Skeleton className={cn('w-full rounded-none', aspect === 'video' ? 'aspect-video' : 'aspect-square')} />
           <div className="p-2.5 space-y-2">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-3 w-1/2" />

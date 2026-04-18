@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBrowseVideos } from '@/hooks/use-content'
 import { useToggleContentVisibility } from '@/hooks/use-users'
-import { Button } from '@/components/ui/button'
+import { Pagination } from '@/components/ui/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
 import { SkeletonContentGrid } from '@/components/ui/skeleton'
 import { formatDate } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, Eye, EyeOff, Film, Play, Clock } from 'lucide-react'
+import { Eye, EyeOff, Film, Play, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function ContentVideosTab() {
@@ -44,7 +44,7 @@ export function ContentVideosTab() {
       </div>
 
       {isLoading ? (
-        <SkeletonContentGrid count={8} />
+        <SkeletonContentGrid count={8} aspect="video" />
       ) : videos.length === 0 ? (
         <div className="text-center py-20 text-tertiary">No mind movies found</div>
       ) : (
@@ -71,9 +71,10 @@ export function ContentVideosTab() {
                   <button
                     onClick={(e) => handleToggle(e, video.id, video.is_public)}
                     disabled={togglingId === video.id}
-                    className="h-7 w-7 rounded-md bg-white/90 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:opacity-50 z-10"
+                    title={video.is_public ? 'Click to unpublish' : 'Click to make public'}
+                    className={`h-7 px-2 rounded-md shadow-sm flex items-center justify-center gap-1 text-[10px] font-semibold cursor-pointer disabled:opacity-50 transition-colors z-10 ${video.is_public ? 'bg-success/90 text-white hover:bg-destructive/90' : 'bg-white/90 text-tertiary hover:bg-success/90 hover:text-white'}`}
                   >
-                    {video.is_public ? <EyeOff className="h-3.5 w-3.5 text-destructive" /> : <Eye className="h-3.5 w-3.5 text-tertiary" />}
+                    {video.is_public ? <><Eye className="h-3 w-3" /> Live</> : <><EyeOff className="h-3 w-3" /> Off</>}
                   </button>
                   <Badge
                     variant={video.status === 'completed' || video.status === 'ready' ? 'success' : video.status === 'failed' ? 'destructive' : 'warning'}
@@ -100,15 +101,7 @@ export function ContentVideosTab() {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-tertiary">Page {page} of {totalPages} ({total} videos)</p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}><ChevronRight className="h-4 w-4" /></Button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} total={total} pageSize={24} onPageChange={setPage} />
     </div>
   )
 }
