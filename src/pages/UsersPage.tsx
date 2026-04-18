@@ -34,7 +34,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Users</h1>
         <p className="text-tertiary text-sm mt-1">

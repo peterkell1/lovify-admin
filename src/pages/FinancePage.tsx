@@ -18,7 +18,7 @@ export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<TabId>('pnl')
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Finance</h1>
         <p className="text-tertiary text-sm mt-1">Revenue, costs, subscriptions, and credit economy</p>

@@ -5,10 +5,9 @@ import {
   Users,
   Music,
   DollarSign,
-  Shield,
   BarChart3,
-  Settings,
   ClipboardList,
+  Settings,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'

@@ -16,7 +16,7 @@ export default function ContentPage() {
   const [activeTab, setActiveTab] = useState<TabId>('songs')
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Content</h1>
         <p className="text-tertiary text-sm mt-1">Browse and manage all user-generated content</p>

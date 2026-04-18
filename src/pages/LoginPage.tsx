@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '@/hooks/use-admin-auth'
 import { Button } from '@/components/ui/button'
@@ -9,8 +9,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login } = useAdminAuth()
+  const { login, isAuthenticated } = useAdminAuth()
   const navigate = useNavigate()
+
+  // Redirect when auth state confirms admin
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,10 +26,10 @@ export default function LoginPage() {
 
     try {
       await login(email, password)
-      setTimeout(() => navigate('/', { replace: true }), 500)
+      // Don't navigate here — the useEffect above handles it
+      // once the auth state listener confirms admin role
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
-    } finally {
       setLoading(false)
     }
   }
