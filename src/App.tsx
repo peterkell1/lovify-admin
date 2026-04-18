@@ -12,6 +12,7 @@ import FinancePage from '@/pages/FinancePage'
 import ModerationPage from '@/pages/ModerationPage'
 import AnalyticsPage from '@/pages/AnalyticsPage'
 import SettingsPage from '@/pages/SettingsPage'
+import AuditLogPage from '@/pages/AuditLogPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="finance" element={<FinancePage />} />
             <Route path="moderation" element={<ModerationPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="audit" element={<AuditLogPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

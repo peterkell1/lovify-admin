@@ -2,6 +2,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { AdminUser, CreditTransaction, UserCredits, UserSubscription, UserSong, UserVision, UserVideo } from '@/types/admin'
 
+async function logAudit(action: string, target_type?: string, target_id?: string, details?: Record<string, unknown>) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return
+  await supabase.from('admin_audit_log').insert({
+    admin_user_id: session.user.id,
+    action,
+    target_type: target_type ?? null,
+    target_id: target_id ?? null,
+    details: details ?? null,
+  }).then(() => {}) // fire-and-forget, don't block the action
+}
+
 // ─── User Directory ───
 
 interface UseUsersParams {
@@ -128,6 +140,9 @@ export function useGrantCredits() {
       })
 
       if (error) throw error
+
+      logAudit('grant_credits', 'user', userId, { amount, type, description })
+
       return data
     },
     onSuccess: (_data, variables) => {
@@ -155,6 +170,8 @@ export function useToggleContentVisibility() {
         .eq('id', id)
 
       if (error) throw error
+
+      logAudit('toggle_visibility', table, id, { is_public: isPublic })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-user-detail'] })

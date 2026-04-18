@@ -1,21 +1,52 @@
-import { Card, CardContent } from '@/components/ui/card'
-import { DollarSign } from 'lucide-react'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
+import { PnLTab } from '@/components/finance/PnLTab'
+import { AICostsTab } from '@/components/finance/AICostsTab'
+import { SubscriptionsTab } from '@/components/finance/SubscriptionsTab'
+import { CreditEconomyTab } from '@/components/finance/CreditEconomyTab'
+
+const tabs = [
+  { id: 'pnl', label: 'Profit & Loss' },
+  { id: 'ai-costs', label: 'AI Costs' },
+  { id: 'subscriptions', label: 'Subscriptions' },
+  { id: 'credits', label: 'Credit Economy' },
+] as const
+
+type TabId = (typeof tabs)[number]['id']
 
 export default function FinancePage() {
+  const [activeTab, setActiveTab] = useState<TabId>('pnl')
+
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Finance</h1>
-        <p className="text-tertiary text-sm mt-1">P&L, AI costs, subscriptions, and credits</p>
+        <p className="text-tertiary text-sm mt-1">Revenue, costs, subscriptions, and credit economy</p>
       </div>
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-20">
-          <div className="h-14 w-14 rounded-2xl bg-accent/10 text-accent flex items-center justify-center mb-4">
-            <DollarSign className="h-7 w-7" />
-          </div>
-          <p className="text-tertiary font-medium">Finance dashboard coming in Phase 2</p>
-        </CardContent>
-      </Card>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 bg-secondary rounded-xl p-1">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer',
+              activeTab === tab.id
+                ? 'bg-card text-foreground shadow-soft'
+                : 'text-tertiary hover:text-foreground'
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      {activeTab === 'pnl' && <PnLTab />}
+      {activeTab === 'ai-costs' && <AICostsTab />}
+      {activeTab === 'subscriptions' && <SubscriptionsTab />}
+      {activeTab === 'credits' && <CreditEconomyTab />}
     </div>
   )
 }
