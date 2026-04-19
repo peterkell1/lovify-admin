@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useRevenueChart } from '@/hooks/use-dashboard-stats'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DateRangeFilter, computeRange, type PresetRange } from '@/components/ui/date-range-filter'
 import {
   AreaChart,
   Area,
@@ -12,20 +14,45 @@ import {
 } from 'recharts'
 import { format, parseISO } from 'date-fns'
 
+const PRESET_LABELS: Record<PresetRange, string> = {
+  '3d': 'Last 3 days',
+  '1w': 'Last week',
+  '1m': 'This month',
+  '3m': 'Last 3 months',
+  '1y': 'Last year',
+  'custom': 'Custom range',
+}
+
 export function RevenueChart() {
-  const { data, isLoading } = useRevenueChart()
+  const [preset, setPreset] = useState<PresetRange>('1m')
+  const [range, setRange] = useState(computeRange('1m'))
+
+  const { data, isLoading } = useRevenueChart(range)
+
+  const handleChange = (newPreset: PresetRange, newRange: { from: string; to: string }) => {
+    setPreset(newPreset)
+    setRange(newRange)
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Revenue vs Costs (30 days)</CardTitle>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <CardTitle>Revenue vs Costs</CardTitle>
+            <p className="text-xs text-tertiary mt-1">
+              {PRESET_LABELS[preset]} · {range.from} → {range.to}
+            </p>
+          </div>
+          <DateRangeFilter value={preset} range={range} onChange={handleChange} />
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <Skeleton className="h-[280px] w-full" />
         ) : !data || data.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-sm text-tertiary">
-            No revenue data yet. This will populate once daily_pnl_stats has data.
+            No revenue data for this period.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={280}>

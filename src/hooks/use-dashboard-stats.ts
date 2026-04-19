@@ -57,30 +57,56 @@ export function useCreditsConsumed() {
   })
 }
 
-// Revenue chart — separate hook
+// Revenue chart — separate hook with date range
 interface RevenueDataPoint {
   date: string
   revenue: number
   costs: number
 }
 
-export function useRevenueChart() {
+export interface DateRange {
+  from: string  // YYYY-MM-DD
+  to: string    // YYYY-MM-DD
+}
+
+export function useRevenueChart(range: DateRange) {
   return useQuery({
-    queryKey: ['revenue-chart'],
+    queryKey: ['revenue-chart', range.from, range.to],
     queryFn: async (): Promise<RevenueDataPoint[]> => {
       const { data } = await supabase
         .from('daily_pnl_stats')
         .select('date, total_revenue_usd, total_costs_usd')
+        .gte('date', range.from)
+        .lte('date', range.to)
         .order('date', { ascending: true })
-        .limit(30)
 
-      if (!data) return []
+      // Build a map of existing data by date
+      const dataMap = new Map<string, { revenue: number; costs: number }>()
+      for (const row of data ?? []) {
+        dataMap.set(row.date, {
+          revenue: Number(row.total_revenue_usd ?? 0),
+          costs: Number(row.total_costs_usd ?? 0),
+        })
+      }
 
-      return data.map((row) => ({
-        date: row.date,
-        revenue: Number(row.total_revenue_usd ?? 0),
-        costs: Number(row.total_costs_usd ?? 0),
-      }))
+      // Fill ALL days in the range so the timeline is continuous
+      const result: RevenueDataPoint[] = []
+      const start = new Date(range.from)
+      const end = new Date(range.to)
+      const cursor = new Date(start)
+
+      while (cursor <= end) {
+        const dateStr = cursor.toISOString().split('T')[0]
+        const existing = dataMap.get(dateStr)
+        result.push({
+          date: dateStr,
+          revenue: existing?.revenue ?? 0,
+          costs: existing?.costs ?? 0,
+        })
+        cursor.setDate(cursor.getDate() + 1)
+      }
+
+      return result
     },
     staleTime: 5 * 60_000,
   })
