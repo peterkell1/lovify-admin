@@ -117,8 +117,11 @@ export interface BrowseVideo {
   created_at: string
   user_id: string
   vision_id: string
+  song_id: string | null
   email: string | null
   display_name: string | null
+  /** Fallback thumbnail — linked vision image or song cover */
+  fallback_image_url: string | null
 }
 
 export function useBrowseVideos({ page = 1, pageSize = 24, visibility }: ContentParams) {
@@ -127,7 +130,7 @@ export function useBrowseVideos({ page = 1, pageSize = 24, visibility }: Content
     queryFn: async () => {
       let query = supabase
         .from('generated_videos')
-        .select('id, status, thumbnail_url, video_url, duration_seconds, is_public, created_at, user_id, vision_id', { count: 'exact' })
+        .select('id, status, thumbnail_url, video_url, duration_seconds, is_public, created_at, user_id, vision_id, song_id', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1)
 
@@ -139,13 +142,29 @@ export function useBrowseVideos({ page = 1, pageSize = 24, visibility }: Content
       if (!data || data.length === 0) return { items: [] as BrowseVideo[], total: 0 }
 
       const userIds = [...new Set(data.map((d) => d.user_id))]
-      const { data: profiles } = await supabase.from('profiles').select('id, email, display_name').in('id', userIds)
+      const visionIds = [...new Set(data.map((d) => d.vision_id).filter(Boolean))]
+      const songIds = [...new Set(data.map((d) => d.song_id).filter(Boolean))]
+
+      // Fetch profiles + linked vision images + linked song covers in parallel
+      const [{ data: profiles }, { data: visions }, { data: songs }] = await Promise.all([
+        supabase.from('profiles').select('id, email, display_name').in('id', userIds),
+        visionIds.length > 0
+          ? supabase.from('generated_visions').select('id, image_url').in('id', visionIds)
+          : Promise.resolve({ data: [] }),
+        songIds.length > 0
+          ? supabase.from('generated_songs').select('id, image_url').in('id', songIds)
+          : Promise.resolve({ data: [] }),
+      ])
+
       const pMap = new Map(profiles?.map((p) => [p.id, p]) ?? [])
+      const vMap = new Map(visions?.map((v) => [v.id, v.image_url]) ?? [])
+      const sMap = new Map(songs?.map((s) => [s.id, s.image_url]) ?? [])
 
       const items: BrowseVideo[] = data.map((d) => ({
         ...d,
         email: pMap.get(d.user_id)?.email ?? null,
         display_name: pMap.get(d.user_id)?.display_name ?? null,
+        fallback_image_url: vMap.get(d.vision_id) ?? (d.song_id ? sMap.get(d.song_id) ?? null : null),
       }))
 
       return { items, total: count ?? 0 }

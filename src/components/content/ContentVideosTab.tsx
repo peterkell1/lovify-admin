@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBrowseVideos } from '@/hooks/use-content'
-import { useToggleContentVisibility } from '@/hooks/use-users'
+import { useToggleContentVisibility, useDeleteContent } from '@/hooks/use-users'
 import { Pagination } from '@/components/ui/pagination'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
 import { SkeletonContentGrid } from '@/components/ui/skeleton'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { formatDate } from '@/lib/utils'
-import { Eye, EyeOff, Film, Play, Clock } from 'lucide-react'
+import { Eye, EyeOff, Film, Play, Clock, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function ContentVideosTab() {
@@ -16,6 +17,8 @@ export function ContentVideosTab() {
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const navigate = useNavigate()
   const toggleVisibility = useToggleContentVisibility()
+  const deleteContent = useDeleteContent()
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string } | null>(null)
 
   const { data, isLoading } = useBrowseVideos({ page, pageSize: 24, visibility })
   const videos = data?.items ?? []
@@ -31,6 +34,17 @@ export function ContentVideosTab() {
       toast.success(isPublic ? 'Video unpublished' : 'Video made public')
     } catch { toast.error('Failed to update') }
     finally { setTogglingId(null) }
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return
+    try {
+      await deleteContent.mutateAsync({ table: 'generated_videos', id: confirmDelete.id })
+      toast.success('Mind movie permanently deleted')
+      setConfirmDelete(null)
+    } catch {
+      toast.error('Failed to delete mind movie')
+    }
   }
 
   return (
@@ -52,11 +66,23 @@ export function ContentVideosTab() {
           {videos.map((video) => (
             <div key={video.id} className="border border-border rounded-xl overflow-hidden bg-card group">
               <div className="relative aspect-video bg-muted">
-                {video.thumbnail_url ? (
-                  <img src={video.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                {(video.thumbnail_url || video.fallback_image_url) ? (
+                  <img
+                    src={(video.thumbnail_url || video.fallback_image_url)!}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : video.video_url ? (
+                  <video
+                    src={`${video.video_url}#t=0.1`}
+                    className="w-full h-full object-cover"
+                    preload="metadata"
+                    muted
+                    playsInline
+                  />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Film className="h-8 w-8 text-tertiary/40" />
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-warm">
+                    <Film className="h-8 w-8 text-tertiary/60" />
                   </div>
                 )}
                 {video.video_url && (
@@ -67,15 +93,24 @@ export function ContentVideosTab() {
                     </div>
                   </a>
                 )}
-                <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between">
-                  <button
-                    onClick={(e) => handleToggle(e, video.id, video.is_public)}
-                    disabled={togglingId === video.id}
-                    title={video.is_public ? 'Click to unpublish' : 'Click to make public'}
-                    className={`h-7 px-2 rounded-md shadow-sm flex items-center justify-center gap-1 text-[10px] font-semibold cursor-pointer disabled:opacity-50 transition-colors z-10 ${video.is_public ? 'bg-success/90 text-white hover:bg-destructive/90' : 'bg-white/90 text-tertiary hover:bg-success/90 hover:text-white'}`}
-                  >
-                    {video.is_public ? <><Eye className="h-3 w-3" /> Live</> : <><EyeOff className="h-3 w-3" /> Off</>}
-                  </button>
+                <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between z-10">
+                  <div className="flex gap-1">
+                    <button
+                      onClick={(e) => handleToggle(e, video.id, video.is_public)}
+                      disabled={togglingId === video.id}
+                      title={video.is_public ? 'Click to unpublish' : 'Click to make public'}
+                      className={`h-7 px-2 rounded-md shadow-sm flex items-center justify-center gap-1 text-[10px] font-semibold cursor-pointer disabled:opacity-50 transition-colors ${video.is_public ? 'bg-success/90 text-white hover:bg-destructive/90' : 'bg-white/90 text-tertiary hover:bg-success/90 hover:text-white'}`}
+                    >
+                      {video.is_public ? <><Eye className="h-3 w-3" /> Live</> : <><EyeOff className="h-3 w-3" /> Off</>}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); setConfirmDelete({ id: video.id }) }}
+                      title="Delete permanently"
+                      className="h-7 w-7 rounded-md shadow-sm flex items-center justify-center bg-white/90 text-destructive hover:bg-destructive hover:text-white cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                   <Badge
                     variant={video.status === 'completed' || video.status === 'ready' ? 'success' : video.status === 'failed' ? 'destructive' : 'warning'}
                     className="text-[10px]"
@@ -102,6 +137,16 @@ export function ContentVideosTab() {
       )}
 
       <Pagination page={page} totalPages={totalPages} total={total} pageSize={24} onPageChange={setPage} />
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete this mind movie permanently?"
+        description="This mind movie will be permanently removed from the database. The creator will lose access to it. This action CANNOT be undone."
+        confirmLabel="Delete permanently"
+        loading={deleteContent.isPending}
+      />
     </div>
   )
 }

@@ -181,3 +181,29 @@ export function useToggleContentVisibility() {
     },
   })
 }
+
+// ─── Hard Delete Content ───
+// Permanently deletes a song/vision/video from the database.
+// Irreversible. Only use for legal takedowns or spam.
+export function useDeleteContent() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ table, id, metadata }: {
+      table: 'generated_songs' | 'generated_visions' | 'generated_videos'
+      id: string
+      metadata?: Record<string, unknown>
+    }) => {
+      const { error } = await supabase.from(table).delete().eq('id', id)
+      if (error) throw error
+
+      logAudit('delete_content', table, id, { ...metadata, deleted: true })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-user-detail'] })
+      queryClient.invalidateQueries({ queryKey: ['content-songs'] })
+      queryClient.invalidateQueries({ queryKey: ['content-visions'] })
+      queryClient.invalidateQueries({ queryKey: ['content-videos'] })
+    },
+  })
+}
