@@ -6,6 +6,8 @@ import { DateRangeFilter, computeRange, type PresetRange } from '@/components/ui
 import {
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -57,43 +59,71 @@ export function RevenueChart() {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(30 15% 92%)" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 12, fill: 'hsl(27 7% 48%)' }}
-                tickFormatter={(v) => format(parseISO(v), 'MMM d')}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: 'hsl(27 7% 48%)' }}
-                tickFormatter={(v) => `$${v}`}
-              />
-              <Tooltip
-                formatter={(value) => [`$${Number(value).toFixed(2)}`, '']}
-                labelFormatter={(label) => format(parseISO(label as string), 'MMM d, yyyy')}
-                contentStyle={{
-                  backgroundColor: 'hsl(25 100% 97%)',
-                  border: '1px solid hsl(30 15% 92%)',
-                  borderRadius: '12px',
-                  fontSize: '13px',
-                }}
-              />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="revenue"
-                stroke="hsl(142 76% 36%)"
-                fill="hsl(142 76% 36% / 0.1)"
-                name="Revenue"
-              />
-              <Area
-                type="monotone"
-                dataKey="costs"
-                stroke="hsl(15 85% 60%)"
-                fill="hsl(15 85% 60% / 0.1)"
-                name="Costs"
-              />
-            </AreaChart>
+            {data.length === 1 ? (
+              <BarChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(30 15% 92%)" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 12, fill: 'hsl(27 7% 48%)' }}
+                  tickFormatter={(v) => format(parseISO(v), 'MMM d')}
+                />
+                <YAxis
+                  tick={{ fontSize: 12, fill: 'hsl(27 7% 48%)' }}
+                  tickFormatter={(v) => `$${v}`}
+                />
+                <Tooltip
+                  formatter={(value) => [`$${Number(value).toFixed(2)}`, '']}
+                  labelFormatter={(label) => format(parseISO(label as string), 'MMM d, yyyy')}
+                  contentStyle={{
+                    backgroundColor: 'hsl(25 100% 97%)',
+                    border: '1px solid hsl(30 15% 92%)',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="revenue" fill="hsl(142 76% 36%)" name="Revenue" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="costs" fill="hsl(15 85% 60%)" name="Costs" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            ) : (
+              <AreaChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(30 15% 92%)" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 12, fill: 'hsl(27 7% 48%)' }}
+                  tickFormatter={(v) => format(parseISO(v), 'MMM d')}
+                />
+                <YAxis
+                  tick={{ fontSize: 12, fill: 'hsl(27 7% 48%)' }}
+                  tickFormatter={(v) => `$${v}`}
+                />
+                <Tooltip
+                  formatter={(value) => [`$${Number(value).toFixed(2)}`, '']}
+                  labelFormatter={(label) => format(parseISO(label as string), 'MMM d, yyyy')}
+                  contentStyle={{
+                    backgroundColor: 'hsl(25 100% 97%)',
+                    border: '1px solid hsl(30 15% 92%)',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                  }}
+                />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="hsl(142 76% 36%)"
+                  fill="hsl(142 76% 36% / 0.1)"
+                  name="Revenue"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="costs"
+                  stroke="hsl(15 85% 60%)"
+                  fill="hsl(15 85% 60% / 0.1)"
+                  name="Costs"
+                />
+              </AreaChart>
+            )}
           </ResponsiveContainer>
         )}
       </CardContent>

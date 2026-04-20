@@ -17,7 +17,19 @@ const COST_TYPE_COLORS: Record<string, string> = {
   video_generation: 'hsl(262 83% 58%)',
   music_generation: 'hsl(142 76% 36%)',
   text_generation: 'hsl(38 92% 50%)',
+  voice_generation: 'hsl(200 85% 55%)',
+  lyrics_alignment: 'hsl(320 70% 55%)',
 }
+
+// Notion spec — hard cost vs credit price per user-facing action.
+// Used to show real-spend vs revenue-at-credit-price per flow.
+const NOTION_SPEC = [
+  { flow: 'Song Creation',        costType: 'music_generation',   hardCost: 0.10, creditPrice: 0.50, credits: 50 },
+  { flow: 'Vision Image',         costType: 'image_generation',   hardCost: 0.08, creditPrice: 0.40, credits: 40 },
+  { flow: 'Mind Movie (Standard)',costType: 'video_generation',   hardCost: 0.26, creditPrice: 1.30, credits: 130, modelMatch: 'seedance' },
+  { flow: 'Mind Movie (Premium)', costType: 'video_generation',   hardCost: 0.35, creditPrice: 1.75, credits: 175, modelMatch: 'kling' },
+  { flow: 'Song Extra Message',   costType: 'text_generation',    hardCost: 0.003, creditPrice: 0.015, credits: 2 },
+]
 
 export function AICostsTab() {
   const { data: costs, isLoading } = useAICosts(30)
@@ -54,25 +66,43 @@ export function AICostsTab() {
       .slice(0, 10)
 
     // Daily trend
-    const dayMap = new Map<string, { image: number; video: number; music: number; text: number }>()
+    const dayMap = new Map<string, { image: number; video: number; music: number; text: number; voice: number; alignment: number }>()
     for (const c of costs) {
       const day = c.created_at.split('T')[0]
-      const entry = dayMap.get(day) ?? { image: 0, video: 0, music: 0, text: 0 }
-      if (c.cost_type.includes('image')) entry.image += c.cost_usd
-      else if (c.cost_type.includes('video')) entry.video += c.cost_usd
-      else if (c.cost_type.includes('music')) entry.music += c.cost_usd
+      const entry = dayMap.get(day) ?? { image: 0, video: 0, music: 0, text: 0, voice: 0, alignment: 0 }
+      if (c.cost_type === 'image_generation') entry.image += c.cost_usd
+      else if (c.cost_type === 'video_generation') entry.video += c.cost_usd
+      else if (c.cost_type === 'music_generation') entry.music += c.cost_usd
+      else if (c.cost_type === 'voice_generation') entry.voice += c.cost_usd
+      else if (c.cost_type === 'lyrics_alignment') entry.alignment += c.cost_usd
       else entry.text += c.cost_usd
       dayMap.set(day, entry)
     }
     const dailyTrend = Array.from(dayMap.entries())
-      .map(([date, data]) => ({ date, ...data, total: data.image + data.video + data.music + data.text }))
+      .map(([date, data]) => ({ date, ...data, total: data.image + data.video + data.music + data.text + data.voice + data.alignment }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
     // Today
     const today = new Date().toISOString().split('T')[0]
     const todayCost = costs.filter((c) => c.created_at.startsWith(today)).reduce((s, c) => s + c.cost_usd, 0)
 
-    return { totalCost, totalItems, todayCost, byCostType, byModel, dailyTrend }
+    // Notion-spec breakdown: match each row to a flow by cost_type (+ optional
+    // model substring), then sum real requests/costs. Shows margin vs credit
+    // price so you can see if real spend matches the Notion economics.
+    const byFlow = NOTION_SPEC.map((spec) => {
+      const matching = costs.filter((c) => {
+        if (c.cost_type !== spec.costType) return false
+        if (spec.modelMatch && !c.model_name.toLowerCase().includes(spec.modelMatch)) return false
+        return true
+      })
+      const realCost = matching.reduce((s, c) => s + c.cost_usd, 0)
+      const count = matching.length
+      const expectedRevenue = spec.creditPrice != null ? count * spec.creditPrice : null
+      const margin = expectedRevenue != null ? expectedRevenue - realCost : null
+      return { ...spec, count, realCost, expectedRevenue, margin }
+    })
+
+    return { totalCost, totalItems, todayCost, byCostType, byModel, dailyTrend, byFlow }
   }, [costs])
 
   if (isLoading || !analytics) {
@@ -117,12 +147,56 @@ export function AICostsTab() {
                 <YAxis tick={{ fontSize: 11, fill: 'hsl(27 7% 48%)' }} tickFormatter={(v) => `$${v}`} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`$${Number(v).toFixed(4)}`, '']} labelFormatter={(l) => format(parseISO(l as string), 'MMM d, yyyy')} />
                 <Legend />
-                <Bar dataKey="image" stackId="a" fill={COST_TYPE_COLORS.image_generation} name="Image" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="image" stackId="a" fill={COST_TYPE_COLORS.image_generation} name="Image" />
                 <Bar dataKey="video" stackId="a" fill={COST_TYPE_COLORS.video_generation} name="Video" />
-                <Bar dataKey="music" stackId="a" fill={COST_TYPE_COLORS.music_generation} name="Music" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="music" stackId="a" fill={COST_TYPE_COLORS.music_generation} name="Music" />
+                <Bar dataKey="text" stackId="a" fill={COST_TYPE_COLORS.text_generation} name="Text" />
+                <Bar dataKey="voice" stackId="a" fill={COST_TYPE_COLORS.voice_generation} name="Voice" />
+                <Bar dataKey="alignment" stackId="a" fill={COST_TYPE_COLORS.lyrics_alignment} name="Alignment" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Notion-spec breakdown: real cost vs credit-price revenue per flow */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Cost by User Flow (30D)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Flow</TableHead>
+                <TableHead className="text-right">Requests</TableHead>
+                <TableHead className="text-right">Cost</TableHead>
+                <TableHead className="text-right">Real Spend</TableHead>
+                <TableHead className="text-right">Credits</TableHead>
+                <TableHead className="text-right">Revenue @ 80%</TableHead>
+                <TableHead className="text-right">Margin</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {analytics.byFlow.map((f) => (
+                <TableRow key={f.flow}>
+                  <TableCell className="text-sm font-medium">{f.flow}</TableCell>
+                  <TableCell className="text-right text-sm">{f.count}</TableCell>
+                  <TableCell className="text-right text-sm font-mono text-tertiary">{f.hardCost != null ? `$${f.hardCost.toFixed(3)}` : '—'}</TableCell>
+                  <TableCell className="text-right text-sm font-mono">${f.realCost.toFixed(2)}</TableCell>
+                  <TableCell className="text-right text-sm text-tertiary">{f.credits ?? '—'}</TableCell>
+                  <TableCell className="text-right text-sm font-mono">{f.expectedRevenue != null ? `$${f.expectedRevenue.toFixed(2)}` : '—'}</TableCell>
+                  <TableCell className="text-right text-sm font-mono">
+                    {f.margin != null ? (
+                      <span className={f.margin >= 0 ? 'text-success' : 'text-destructive'}>
+                        ${f.margin.toFixed(2)}
+                      </span>
+                    ) : '—'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 

@@ -52,7 +52,6 @@ export function PnLTab() {
     { name: 'Image Gen', value: pnl.reduce((s, d) => s + Number(d.image_costs_usd), 0), count: pnl.reduce((s, d) => s + d.image_count, 0) },
     { name: 'Video Gen', value: pnl.reduce((s, d) => s + Number(d.video_costs_usd), 0), count: pnl.reduce((s, d) => s + d.video_count, 0) },
     { name: 'Music Gen', value: pnl.reduce((s, d) => s + Number(d.music_costs_usd), 0), count: pnl.reduce((s, d) => s + d.song_count, 0) },
-    { name: 'Text/LLM', value: pnl.reduce((s, d) => s + Number(d.text_costs_usd), 0), count: pnl.reduce((s, d) => s + d.token_count, 0) },
   ]
 
   const tooltipStyle = {
@@ -98,7 +97,7 @@ export function PnLTab() {
       {/* Revenue vs Costs chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Revenue vs Costs (Daily)</CardTitle>
+          <CardTitle>Revenue vs Costs (Last 30 days)</CardTitle>
         </CardHeader>
         <CardContent>
           {chartData.length === 0 ? (
@@ -159,7 +158,7 @@ export function PnLTab() {
                 <div key={c.name} className="flex items-center justify-between">
                   <div>
                     <span className="text-sm font-medium">{c.name}</span>
-                    <span className="text-xs text-tertiary ml-2">({c.count.toLocaleString()} {c.name === 'Text/LLM' ? 'tokens' : 'items'})</span>
+                    <span className="text-xs text-tertiary ml-2">({c.count.toLocaleString()} items)</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
