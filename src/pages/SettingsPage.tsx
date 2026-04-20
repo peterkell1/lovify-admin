@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { formatDate } from '@/lib/utils'
-import { Save, Zap, Gift, Crown, Music, ImageIcon, Film, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Save, Zap, Gift, Crown, Music, ImageIcon, Film } from 'lucide-react'
 import { toast } from 'sonner'
 
 // ─── Credits Config ───
@@ -53,12 +53,12 @@ const FEATURE_META: Record<string, { label: string; description: string; icon: t
     description: 'Allow users to generate mind movie videos',
     icon: Film,
   },
-  credits_enabled: {
-    label: 'Credit System',
-    description: 'When disabled, credit checks are bypassed for all users',
-    icon: Zap,
-  },
 }
+
+// Flags to hide from the admin Feature Management list. The row can still exist
+// in the DB (nothing reads it), but surfacing it in the UI was misleading
+// because flipping it had no effect.
+const HIDDEN_FLAGS = new Set<string>(['credits_enabled'])
 
 // ─── Tabs ───
 
@@ -226,10 +226,12 @@ function FeatureManagementTab() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!flags || flags.length === 0 ? (
-          <p className="text-sm text-tertiary text-center py-6">No features configured</p>
-        ) : (
-          flags.map((flag) => {
+        {(() => {
+          const visibleFlags = (flags ?? []).filter((f) => !HIDDEN_FLAGS.has(f.name))
+          if (visibleFlags.length === 0) {
+            return <p className="text-sm text-tertiary text-center py-6">No features configured</p>
+          }
+          return visibleFlags.map((flag) => {
             const meta = FEATURE_META[flag.name]
             const Icon = meta?.icon ?? Zap
             const isOn = flag.is_enabled === true
@@ -252,18 +254,27 @@ function FeatureManagementTab() {
                 <button
                   onClick={() => handleToggle(flag.id, flag.name, flag.is_enabled)}
                   disabled={togglingId === flag.id}
-                  className="cursor-pointer disabled:opacity-50 transition-opacity"
-                >
-                  {isOn ? (
-                    <ToggleRight className="h-9 w-9 text-success" />
-                  ) : (
-                    <ToggleLeft className="h-9 w-9 text-tertiary" />
+                  role="switch"
+                  aria-checked={isOn}
+                  aria-label={`Toggle ${meta?.label ?? flag.name}`}
+                  className={cn(
+                    'relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40',
+                    'disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer',
+                    isOn ? 'bg-success shadow-soft' : 'bg-muted'
                   )}
+                >
+                  <span
+                    className={cn(
+                      'inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ease-in-out',
+                      isOn ? 'translate-x-6' : 'translate-x-1'
+                    )}
+                  />
                 </button>
               </div>
             )
           })
-        )}
+        })()}
       </CardContent>
     </Card>
   )
