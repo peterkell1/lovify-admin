@@ -12,13 +12,10 @@ import {
 } from 'recharts'
 import { format, parseISO } from 'date-fns'
 
-const COST_TYPE_COLORS: Record<string, string> = {
-  image_generation: 'hsl(15 85% 60%)',
-  video_generation: 'hsl(262 83% 58%)',
-  music_generation: 'hsl(142 76% 36%)',
-  text_generation: 'hsl(38 92% 50%)',
-  voice_generation: 'hsl(200 85% 55%)',
-  lyrics_alignment: 'hsl(320 70% 55%)',
+const FLOW_COLORS = {
+  song: 'hsl(142 76% 36%)',
+  vision: 'hsl(15 85% 60%)',
+  mindMovie: 'hsl(262 83% 58%)',
 }
 
 // Notion spec — hard cost vs credit price per user-facing action.
@@ -65,21 +62,20 @@ export function AICostsTab() {
       .sort((a, b) => b.cost - a.cost)
       .slice(0, 10)
 
-    // Daily trend
-    const dayMap = new Map<string, { image: number; video: number; music: number; text: number; voice: number; alignment: number }>()
+    // Daily trend — rolled up into user-facing flows.
+    // Song = music + text + voice + alignment (lyrics-adjacent costs).
+    // Vision = image. Mind Movie = video.
+    const dayMap = new Map<string, { song: number; vision: number; mindMovie: number }>()
     for (const c of costs) {
       const day = c.created_at.split('T')[0]
-      const entry = dayMap.get(day) ?? { image: 0, video: 0, music: 0, text: 0, voice: 0, alignment: 0 }
-      if (c.cost_type === 'image_generation') entry.image += c.cost_usd
-      else if (c.cost_type === 'video_generation') entry.video += c.cost_usd
-      else if (c.cost_type === 'music_generation') entry.music += c.cost_usd
-      else if (c.cost_type === 'voice_generation') entry.voice += c.cost_usd
-      else if (c.cost_type === 'lyrics_alignment') entry.alignment += c.cost_usd
-      else entry.text += c.cost_usd
+      const entry = dayMap.get(day) ?? { song: 0, vision: 0, mindMovie: 0 }
+      if (c.cost_type === 'image_generation') entry.vision += c.cost_usd
+      else if (c.cost_type === 'video_generation') entry.mindMovie += c.cost_usd
+      else entry.song += c.cost_usd
       dayMap.set(day, entry)
     }
     const dailyTrend = Array.from(dayMap.entries())
-      .map(([date, data]) => ({ date, ...data, total: data.image + data.video + data.music + data.text + data.voice + data.alignment }))
+      .map(([date, data]) => ({ date, ...data, total: data.song + data.vision + data.mindMovie }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
     // Today
@@ -147,12 +143,9 @@ export function AICostsTab() {
                 <YAxis tick={{ fontSize: 11, fill: 'hsl(27 7% 48%)' }} tickFormatter={(v) => `$${v}`} />
                 <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`$${Number(v).toFixed(4)}`, '']} labelFormatter={(l) => format(parseISO(l as string), 'MMM d, yyyy')} />
                 <Legend />
-                <Bar dataKey="image" stackId="a" fill={COST_TYPE_COLORS.image_generation} name="Image" />
-                <Bar dataKey="video" stackId="a" fill={COST_TYPE_COLORS.video_generation} name="Video" />
-                <Bar dataKey="music" stackId="a" fill={COST_TYPE_COLORS.music_generation} name="Music" />
-                <Bar dataKey="text" stackId="a" fill={COST_TYPE_COLORS.text_generation} name="Text" />
-                <Bar dataKey="voice" stackId="a" fill={COST_TYPE_COLORS.voice_generation} name="Voice" />
-                <Bar dataKey="alignment" stackId="a" fill={COST_TYPE_COLORS.lyrics_alignment} name="Alignment" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="song" stackId="a" fill={FLOW_COLORS.song} name="Song" />
+                <Bar dataKey="vision" stackId="a" fill={FLOW_COLORS.vision} name="Vision" />
+                <Bar dataKey="mindMovie" stackId="a" fill={FLOW_COLORS.mindMovie} name="Mind Movie" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
