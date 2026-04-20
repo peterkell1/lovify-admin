@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAppSettings, useUpdateAppSetting, useFeatureFlags, useToggleFeatureFlag } from '@/hooks/use-settings'
 import { cn } from '@/lib/utils'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
@@ -68,6 +69,9 @@ const tabs = [
 ] as const
 
 type TabId = (typeof tabs)[number]['id']
+
+const tabIds = tabs.map((t) => t.id) as readonly TabId[]
+const defaultTab: TabId = 'credits'
 
 // ─── Credits Tab ───
 
@@ -283,7 +287,18 @@ function FeatureManagementTab() {
 // ─── Settings Page ───
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<TabId>('credits')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab') as TabId | null
+  const activeTab: TabId = tabParam && tabIds.includes(tabParam) ? tabParam : defaultTab
+
+  const setActiveTab = (id: TabId) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (id === defaultTab) next.delete('tab')
+      else next.set('tab', id)
+      return next
+    }, { replace: true })
+  }
 
   return (
     <div className="space-y-6">

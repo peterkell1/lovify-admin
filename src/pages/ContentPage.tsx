@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { ContentSongsTab } from '@/components/content/ContentSongsTab'
 import { ContentVisionsTab } from '@/components/content/ContentVisionsTab'
@@ -12,8 +12,22 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]['id']
 
+const tabIds = tabs.map((t) => t.id) as readonly TabId[]
+const defaultTab: TabId = 'songs'
+
 export default function ContentPage() {
-  const [activeTab, setActiveTab] = useState<TabId>('songs')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab') as TabId | null
+  const activeTab: TabId = tabParam && tabIds.includes(tabParam) ? tabParam : defaultTab
+
+  const setActiveTab = (id: TabId) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (id === defaultTab) next.delete('tab')
+      else next.set('tab', id)
+      return next
+    }, { replace: true })
+  }
 
   return (
     <div className="space-y-6">

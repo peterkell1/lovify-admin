@@ -119,8 +119,7 @@ export function AICostsTab() {
                 <Legend />
                 <Bar dataKey="image" stackId="a" fill={COST_TYPE_COLORS.image_generation} name="Image" radius={[0, 0, 0, 0]} />
                 <Bar dataKey="video" stackId="a" fill={COST_TYPE_COLORS.video_generation} name="Video" />
-                <Bar dataKey="music" stackId="a" fill={COST_TYPE_COLORS.music_generation} name="Music" />
-                <Bar dataKey="text" stackId="a" fill={COST_TYPE_COLORS.text_generation} name="Text/LLM" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="music" stackId="a" fill={COST_TYPE_COLORS.music_generation} name="Music" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

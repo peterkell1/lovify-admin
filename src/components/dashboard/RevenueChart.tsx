@@ -11,6 +11,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from 'recharts'
 import { format, parseISO } from 'date-fns'
 
@@ -77,6 +78,7 @@ export function RevenueChart() {
                   fontSize: '13px',
                 }}
               />
+              <Legend />
               <Area
                 type="monotone"
                 dataKey="revenue"

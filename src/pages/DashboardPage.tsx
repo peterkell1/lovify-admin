@@ -8,7 +8,7 @@ import {
 } from '@/hooks/use-dashboard-stats'
 import { LiveStatCard } from '@/components/dashboard/LiveStatCard'
 import { RevenueChart } from '@/components/dashboard/RevenueChart'
-import { Users, Music, ImageIcon, CreditCard, Zap, Crown } from 'lucide-react'
+import { Users, Music, ImageIcon, Zap, Crown } from 'lucide-react'
 
 export default function DashboardPage() {
   const totalUsers = useTotalUsers()
@@ -57,13 +57,6 @@ export default function DashboardPage() {
           value={activeSubs.data}
           isLoading={activeSubs.isLoading}
           icon={<Crown className="h-5 w-5" />}
-        />
-        <LiveStatCard
-          title="MRR (Est.)"
-          value={activeSubs.data ? activeSubs.data * 14.99 : undefined}
-          isLoading={activeSubs.isLoading}
-          icon={<CreditCard className="h-5 w-5" />}
-          format={(n) => `$${n.toFixed(0)}`}
         />
       </div>
 

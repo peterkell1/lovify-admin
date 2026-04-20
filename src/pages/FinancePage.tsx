@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { PnLTab } from '@/components/finance/PnLTab'
 import { AICostsTab } from '@/components/finance/AICostsTab'
@@ -14,8 +14,22 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]['id']
 
+const tabIds = tabs.map((t) => t.id) as readonly TabId[]
+const defaultTab: TabId = 'pnl'
+
 export default function FinancePage() {
-  const [activeTab, setActiveTab] = useState<TabId>('pnl')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab') as TabId | null
+  const activeTab: TabId = tabParam && tabIds.includes(tabParam) ? tabParam : defaultTab
+
+  const setActiveTab = (id: TabId) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (id === defaultTab) next.delete('tab')
+      else next.set('tab', id)
+      return next
+    }, { replace: true })
+  }
 
   return (
     <div className="space-y-6">

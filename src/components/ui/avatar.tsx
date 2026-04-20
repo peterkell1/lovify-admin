@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
 interface AvatarProps {
@@ -14,6 +15,8 @@ const sizeClasses = {
 }
 
 export function Avatar({ src, fallback, size = 'md', className }: AvatarProps) {
+  const [errored, setErrored] = useState(false)
+
   const initials = fallback
     .split(' ')
     .map((n) => n[0])
@@ -21,11 +24,12 @@ export function Avatar({ src, fallback, size = 'md', className }: AvatarProps) {
     .toUpperCase()
     .slice(0, 2)
 
-  if (src) {
+  if (src && !errored) {
     return (
       <img
         src={src}
-        alt={fallback}
+        alt=""
+        onError={() => setErrored(true)}
         className={cn('rounded-full object-cover ring-2 ring-border', sizeClasses[size], className)}
       />
     )
@@ -34,7 +38,7 @@ export function Avatar({ src, fallback, size = 'md', className }: AvatarProps) {
   return (
     <div
       className={cn(
-        'rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold',
+        'rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold ring-2 ring-border',
         sizeClasses[size],
         className
       )}
