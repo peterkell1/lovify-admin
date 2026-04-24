@@ -248,9 +248,10 @@ export const STEP_PRESETS: StepPreset[] = [
       title: 'Crafting your experience…',
       duration_ms: 5000,
       messages: [
-        'Analyzing your story…',
-        'Matching your vibe…',
-        'Preparing your playlist…',
+        'Analyzing your answers…',
+        'Matching you with the right plan…',
+        'Personalizing your recommendations…',
+        'Finalizing your experience…',
       ],
     },
   },
