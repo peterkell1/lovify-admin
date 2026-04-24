@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Users,
   Music,
+  Megaphone,
   DollarSign,
   BarChart3,
   ClipboardList,
@@ -17,6 +18,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/users', icon: Users, label: 'Users' },
   { to: '/content', icon: Music, label: 'Content' },
+  { to: '/funnels', icon: Megaphone, label: 'Funnels' },
   { to: '/finance', icon: DollarSign, label: 'Finance' },
   // { to: '/moderation', icon: Shield, label: 'Moderation' }, // TODO: enable when moderate-prompt edge function is fixed
   { to: '/analytics', icon: BarChart3, label: 'Analytics' },
