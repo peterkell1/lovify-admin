@@ -44,8 +44,14 @@ export default function FunnelDetailPage() {
 
   const handleStatusToggle = async () => {
     const next = funnel.status === 'live' ? 'paused' : 'live'
-    await publish.mutateAsync({ id: funnel.id, slug: funnel.slug, status: next })
-    toast.success(next === 'live' ? 'Funnel live' : 'Funnel paused')
+    try {
+      await publish.mutateAsync({ id: funnel.id, slug: funnel.slug, status: next })
+      toast.success(next === 'live' ? 'Funnel live' : 'Funnel paused')
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : 'Failed to update funnel status',
+      )
+    }
   }
 
   const handleDelete = async () => {

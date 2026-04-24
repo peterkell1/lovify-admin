@@ -21,21 +21,30 @@ async function logAudit(
 
 // POST to the Next.js funnel app's /api/revalidate endpoint to bust its
 // funnel-config cache immediately after an admin publish/edit/pause.
+// Throws on failure so status changes (publish/pause) fail loudly — a
+// silent miss here means the paused funnel keeps serving for up to the
+// SSR cache TTL, which is a surprising and bad default.
 async function bustFunnelCache(slug: string): Promise<void> {
   const base = import.meta.env.VITE_FUNNEL_BASE_URL
   const secret = import.meta.env.VITE_FUNNEL_REVALIDATE_SECRET
-  if (!base || !secret) return
-  try {
-    await fetch(`${base}/api/revalidate`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-revalidate-secret': secret,
-      },
-      body: JSON.stringify({ slug }),
-    })
-  } catch {
-    // Non-blocking — cache will still refresh via its 5-minute TTL.
+  if (!base || !secret) {
+    console.warn(
+      '[bustFunnelCache] skipping — VITE_FUNNEL_BASE_URL or VITE_FUNNEL_REVALIDATE_SECRET missing. Funnel will refresh via SSR TTL.',
+    )
+    return
+  }
+  const res = await fetch(`${base}/api/revalidate`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-revalidate-secret': secret,
+    },
+    body: JSON.stringify({ slug }),
+  })
+  if (!res.ok) {
+    throw new Error(
+      `Cache revalidation failed (${res.status}). The funnel may continue serving its old state for up to a minute.`,
+    )
   }
 }
 
@@ -345,8 +354,17 @@ export function useFunnelAnalytics(id: string | undefined) {
 
       // Drop-off rows: per step, how many sessions reached it, plus the
       // fall-off rate vs the previous step and vs. the very first step.
+      //
+      // Special case: the success step only fires an answer row on SSR
+      // render. A user who closes the tab after confirming payment is
+      // still a conversion — the webhook already flipped their session
+      // to status='converted'. So we use max(answers-for-success,
+      // converted-sessions) as the "reached success" count.
       const rows = steps.map((s, i) => {
-        const reached = reach.get(s.id)?.size ?? 0
+        let reached = reach.get(s.id)?.size ?? 0
+        if (s.step_type === 'success' && converted > reached) {
+          reached = converted
+        }
         const prev = i > 0 ? (reach.get(steps[i - 1].id)?.size ?? 0) : totalSessions
         const dropOffFromPrev = prev > 0 ? 1 - reached / prev : 0
         const overallRate = totalSessions > 0 ? reached / totalSessions : 0

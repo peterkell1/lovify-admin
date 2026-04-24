@@ -1,11 +1,14 @@
-export type FunnelStatus = 'draft' | 'live' | 'paused' | 'archived'
+export type FunnelStatus = 'draft' | 'live' | 'paused'
 
 export type StepType =
   | 'email-capture'
   | 'welcome'
+  | 'narrative'
   | 'quiz-single'
   | 'quiz-multi'
   | 'number-picker'
+  | 'time-picker'
+  | 'statement'
   | 'genre-picker'
   | 'crafting'
   | 'paywall'
@@ -14,9 +17,12 @@ export type StepType =
 export const STEP_TYPES: StepType[] = [
   'email-capture',
   'welcome',
+  'narrative',
   'quiz-single',
   'quiz-multi',
   'number-picker',
+  'time-picker',
+  'statement',
   'genre-picker',
   'crafting',
   'paywall',
@@ -26,9 +32,12 @@ export const STEP_TYPES: StepType[] = [
 export const STEP_TYPE_LABEL: Record<StepType, string> = {
   'email-capture': 'Email capture',
   welcome: 'Welcome',
+  narrative: 'Narrative / reassurance',
   'quiz-single': 'Quiz — single select',
   'quiz-multi': 'Quiz — multi select',
   'number-picker': 'Number picker',
+  'time-picker': 'Time picker',
+  statement: 'Statement (Yes/No)',
   'genre-picker': 'Genre picker',
   crafting: 'Crafting loader',
   paywall: 'Paywall',
@@ -43,6 +52,8 @@ export type PlanOption = {
   label: string
   trialDays: number
   amountCents: number
+  credits?: number
+  interval?: 'month' | 'quarter' | 'year'
 }
 
 export type Funnel = {
@@ -55,6 +66,7 @@ export type Funnel = {
   theme: Record<string, unknown>
   meta_pixel_id: string | null
   default_plan_key: string | null
+  default_interval: 'trial' | 'year' | 'month' | 'quarter' | null
   plan_options: PlanOption[]
   created_by: string | null
   created_at: string

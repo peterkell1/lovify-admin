@@ -7,9 +7,21 @@ interface DialogProps {
   onClose: () => void
   children: ReactNode
   className?: string
+  /**
+   * When true (the default), clicking the dim backdrop closes the dialog.
+   * Set to false for dialogs that hold unsaved state (e.g. step editor)
+   * so marketers don't lose work to a stray click.
+   */
+  dismissOnBackdropClick?: boolean
 }
 
-export function Dialog({ open, onClose, children, className }: DialogProps) {
+export function Dialog({
+  open,
+  onClose,
+  children,
+  className,
+  dismissOnBackdropClick = true,
+}: DialogProps) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden'
@@ -22,6 +34,7 @@ export function Dialog({ open, onClose, children, className }: DialogProps) {
   if (!open) return null
 
   const handleBackdropClick = (e: MouseEvent) => {
+    if (!dismissOnBackdropClick) return
     if (e.target === e.currentTarget) onClose()
   }
 

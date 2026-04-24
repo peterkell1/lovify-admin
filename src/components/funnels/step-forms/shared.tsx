@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import type { QuizOption } from '@/types/funnels'
+import { EmojiInput } from '../EmojiInput'
 
 export function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -37,11 +38,10 @@ export function OptionList({
           className="flex items-center gap-2 rounded-lg border border-border bg-card p-2"
         >
           {withEmoji ? (
-            <Input
-              placeholder="🙂"
+            <EmojiInput
               value={opt.emoji ?? ''}
-              onChange={(e) => update(i, { emoji: e.target.value })}
-              className="w-14 text-center"
+              onChange={(next) => update(i, { emoji: next })}
+              ariaLabel={`Emoji for option ${i + 1}`}
             />
           ) : null}
           <Input

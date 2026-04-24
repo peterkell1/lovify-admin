@@ -15,7 +15,6 @@ const STATUS_TABS: Array<{ value: FunnelStatus | 'all'; label: string }> = [
   { value: 'live', label: 'Live' },
   { value: 'draft', label: 'Draft' },
   { value: 'paused', label: 'Paused' },
-  { value: 'archived', label: 'Archived' },
 ]
 
 export default function FunnelsPage() {
@@ -154,7 +153,5 @@ function StatusBadge({ status }: { status: FunnelStatus }) {
       return <Badge variant="secondary">Draft</Badge>
     case 'paused':
       return <Badge variant="warning">Paused</Badge>
-    case 'archived':
-      return <Badge variant="outline">Archived</Badge>
   }
 }

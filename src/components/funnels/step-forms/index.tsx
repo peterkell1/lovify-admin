@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import type { QuizOption, StepType } from '@/types/funnels'
 import { Field, OptionList, StringListInput } from './shared'
+import { EmojiInput } from '../EmojiInput'
 
 type Config = Record<string, unknown>
 
@@ -13,6 +14,13 @@ type FormProps = {
 
 // Every form is a controlled component. The parent (StepEditor) holds the
 // config in state and saves it when the user clicks Save.
+//
+// NOTE ON PROFILE COLUMNS — answers are landed on profiles.quiz_* columns
+// by the Stripe webhook using a central step_key → column map
+// (see stripe-webhook/index.ts). The admin no longer picks a column here:
+// the standard step_keys (mindset, gender, age, goals, mood, monthly,
+// notification_time, …) are projected automatically; anything else stays
+// funnel-only.
 
 function EmailCaptureForm({ value, onChange }: FormProps) {
   return (
@@ -72,10 +80,18 @@ function WelcomeForm({ value, onChange }: FormProps) {
         />
       </Field>
       <Field label="Hero emoji">
-        <Input
+        <EmojiInput
           value={(value.hero_emoji as string) ?? ''}
-          onChange={(e) => onChange({ ...value, hero_emoji: e.target.value })}
+          onChange={(next) => onChange({ ...value, hero_emoji: next })}
           placeholder="🎵"
+          ariaLabel="Pick hero emoji"
+        />
+      </Field>
+      <Field label="Character image URL (optional)" hint="Replaces the hero emoji if provided.">
+        <Input
+          value={(value.character_image_url as string) ?? ''}
+          onChange={(e) => onChange({ ...value, character_image_url: e.target.value })}
+          placeholder="https://…/character.png"
         />
       </Field>
       <Field label="CTA label">
@@ -89,8 +105,107 @@ function WelcomeForm({ value, onChange }: FormProps) {
   )
 }
 
-const SINGLE_PROFILE_COLUMNS = ['', 'quiz_mindset_key', 'quiz_gender', 'quiz_age_range'] as const
-const MULTI_PROFILE_COLUMNS = ['', 'quiz_goals', 'quiz_mood_boosters'] as const
+function NarrativeForm({ value, onChange }: FormProps) {
+  type Bullet = { emoji?: string; text: string }
+  const [bullets, setBullets] = useState<Bullet[]>(
+    Array.isArray(value.bullets) ? (value.bullets as Bullet[]) : [],
+  )
+  useEffect(() => {
+    onChange({ ...value, bullets })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bullets])
+
+  const update = (i: number, patch: Partial<Bullet>) =>
+    setBullets((curr) => curr.map((b, idx) => (idx === i ? { ...b, ...patch } : b)))
+  const remove = (i: number) =>
+    setBullets((curr) => curr.filter((_, idx) => idx !== i))
+  const add = () => setBullets((curr) => [...curr, { text: '' }])
+
+  return (
+    <>
+      <Field
+        label="Title"
+        hint="Supports {{answer.<step_key>}} tokens — e.g. switch to Lovify for {{answer.monthly}} minutes a day."
+      >
+        <Input
+          value={(value.title as string) ?? ''}
+          onChange={(e) => onChange({ ...value, title: e.target.value })}
+        />
+      </Field>
+      <Field label="Subtitle">
+        <Input
+          value={(value.subtitle as string) ?? ''}
+          onChange={(e) => onChange({ ...value, subtitle: e.target.value })}
+        />
+      </Field>
+      <Field label="Character image URL (optional)">
+        <Input
+          value={(value.character_image_url as string) ?? ''}
+          onChange={(e) => onChange({ ...value, character_image_url: e.target.value })}
+          placeholder="https://…/character.png"
+        />
+      </Field>
+      <Field label="Hero emoji (optional)">
+        <EmojiInput
+          value={(value.hero_emoji as string) ?? ''}
+          onChange={(next) => onChange({ ...value, hero_emoji: next })}
+          placeholder="✨"
+          ariaLabel="Pick hero emoji"
+        />
+      </Field>
+      <Field label="Bullets (optional)">
+        <div className="space-y-2">
+          {bullets.map((b, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card p-2"
+            >
+              <EmojiInput
+                value={b.emoji ?? ''}
+                onChange={(next) => update(i, { emoji: next })}
+                ariaLabel={`Emoji for bullet ${i + 1}`}
+              />
+              <Input
+                placeholder="Make your music journey tailored"
+                value={b.text}
+                onChange={(e) => update(i, { text: e.target.value })}
+                className="flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="rounded-md p-2 text-destructive hover:bg-destructive/10"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={add}
+            className="text-xs text-primary hover:underline"
+          >
+            + Add bullet
+          </button>
+        </div>
+      </Field>
+      <Field label="Footer note (optional)">
+        <Input
+          value={(value.footer_note as string) ?? ''}
+          onChange={(e) => onChange({ ...value, footer_note: e.target.value })}
+          placeholder="We won't share your data with third parties"
+        />
+      </Field>
+      <Field label="CTA label">
+        <Input
+          value={(value.cta_label as string) ?? ''}
+          onChange={(e) => onChange({ ...value, cta_label: e.target.value })}
+          placeholder="Continue"
+        />
+      </Field>
+    </>
+  )
+}
 
 function QuizSingleForm({ value, onChange }: FormProps) {
   const [options, setOptions] = useState<QuizOption[]>(
@@ -114,20 +229,6 @@ function QuizSingleForm({ value, onChange }: FormProps) {
           value={(value.subtitle as string) ?? ''}
           onChange={(e) => onChange({ ...value, subtitle: e.target.value })}
         />
-      </Field>
-      <Field label="Profile column" hint="Quiz answer writes to this profiles column at purchase time.">
-        <Select
-          value={(value.profile_column as string) ?? ''}
-          onChange={(e) =>
-            onChange({ ...value, profile_column: e.target.value || null })
-          }
-        >
-          {SINGLE_PROFILE_COLUMNS.map((c) => (
-            <option key={c || 'none'} value={c}>
-              {c || '— (none)'}
-            </option>
-          ))}
-        </Select>
       </Field>
       <Field label="Layout">
         <Select
@@ -178,20 +279,6 @@ function QuizMultiForm({ value, onChange }: FormProps) {
           onChange={(e) => onChange({ ...value, subtitle: e.target.value })}
         />
       </Field>
-      <Field label="Profile column">
-        <Select
-          value={(value.profile_column as string) ?? ''}
-          onChange={(e) =>
-            onChange({ ...value, profile_column: e.target.value || null })
-          }
-        >
-          {MULTI_PROFILE_COLUMNS.map((c) => (
-            <option key={c || 'none'} value={c}>
-              {c || '— (none)'}
-            </option>
-          ))}
-        </Select>
-      </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Min selections">
           <Input
@@ -224,13 +311,10 @@ function NumberPickerForm({ value, onChange }: FormProps) {
           onChange={(e) => onChange({ ...value, title: e.target.value })}
         />
       </Field>
-      <Field label="Profile column (optional)">
+      <Field label="Subtitle">
         <Input
-          value={(value.profile_column as string) ?? ''}
-          onChange={(e) =>
-            onChange({ ...value, profile_column: e.target.value || undefined })
-          }
-          placeholder="monthly_goal"
+          value={(value.subtitle as string) ?? ''}
+          onChange={(e) => onChange({ ...value, subtitle: e.target.value })}
         />
       </Field>
       <div className="grid grid-cols-3 gap-2">
@@ -269,6 +353,103 @@ function NumberPickerForm({ value, onChange }: FormProps) {
           onChange={(e) => onChange({ ...value, unit_label: e.target.value })}
           placeholder="minutes"
         />
+      </Field>
+    </>
+  )
+}
+
+function TimePickerForm({ value, onChange }: FormProps) {
+  return (
+    <>
+      <Field label="Title">
+        <Input
+          value={(value.title as string) ?? ''}
+          onChange={(e) => onChange({ ...value, title: e.target.value })}
+          placeholder="21 days is a great start to building healthy habits"
+        />
+      </Field>
+      <Field label="Subtitle">
+        <Input
+          value={(value.subtitle as string) ?? ''}
+          onChange={(e) => onChange({ ...value, subtitle: e.target.value })}
+          placeholder="Notifications will help you stay on track"
+        />
+      </Field>
+      <div className="grid grid-cols-3 gap-2">
+        <Field label="Default hour (1-12)">
+          <Input
+            type="number"
+            min={1}
+            max={12}
+            value={(value.default_hour as number) ?? 9}
+            onChange={(e) => onChange({ ...value, default_hour: Number(e.target.value) })}
+          />
+        </Field>
+        <Field label="Default minute (0-59)">
+          <Input
+            type="number"
+            min={0}
+            max={59}
+            value={(value.default_minute as number) ?? 0}
+            onChange={(e) => onChange({ ...value, default_minute: Number(e.target.value) })}
+          />
+        </Field>
+        <Field label="Default period">
+          <Select
+            value={(value.default_period as string) ?? 'AM'}
+            onChange={(e) => onChange({ ...value, default_period: e.target.value })}
+          >
+            <option value="AM">AM</option>
+            <option value="PM">PM</option>
+          </Select>
+        </Field>
+      </div>
+      <Field label="Minute step" hint="How far minutes snap on the wheel (5, 10, 15).">
+        <Input
+          type="number"
+          min={1}
+          max={30}
+          value={(value.minute_step as number) ?? 5}
+          onChange={(e) => onChange({ ...value, minute_step: Number(e.target.value) })}
+        />
+      </Field>
+      <Field label="CTA label">
+        <Input
+          value={(value.cta_label as string) ?? ''}
+          onChange={(e) => onChange({ ...value, cta_label: e.target.value })}
+          placeholder="Continue"
+        />
+      </Field>
+    </>
+  )
+}
+
+function StatementForm({ value, onChange }: FormProps) {
+  return (
+    <>
+      <Field label="Title" hint="The question above the quote, e.g. Do you relate to the statement?">
+        <Input
+          value={(value.title as string) ?? ''}
+          onChange={(e) => onChange({ ...value, title: e.target.value })}
+        />
+      </Field>
+      <Field label="Statement">
+        <textarea
+          value={(value.statement as string) ?? ''}
+          onChange={(e) => onChange({ ...value, statement: e.target.value })}
+          className="min-h-[80px] w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm"
+          placeholder="I enjoy music, but it's hard for me to make my own"
+        />
+      </Field>
+      <Field label="Required">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={value.required !== false}
+            onChange={(e) => onChange({ ...value, required: e.target.checked })}
+          />
+          Must answer to continue
+        </label>
       </Field>
     </>
   )
@@ -350,16 +531,19 @@ function CraftingForm({ value, onChange }: FormProps) {
 }
 
 function PaywallForm({ value, onChange }: FormProps) {
-  const [planKeys, setPlanKeys] = useState<string[]>(
-    Array.isArray(value.plan_keys) ? (value.plan_keys as string[]) : [],
-  )
+  // plan_keys and default_plan_key are funnel-level now (see Plans tab).
+  // We clear any legacy per-step values on first render so the step's
+  // paywall shows every enabled plan instead of an old allowlist subset.
   const [features, setFeatures] = useState<string[]>(
     Array.isArray(value.features) ? (value.features as string[]) : [],
   )
   useEffect(() => {
-    onChange({ ...value, plan_keys: planKeys, features })
+    const next: Record<string, unknown> = { ...value, features }
+    if ('plan_keys' in next) delete next.plan_keys
+    if ('default_plan_key' in next) delete next.default_plan_key
+    onChange(next)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planKeys, features])
+  }, [features])
 
   return (
     <>
@@ -369,16 +553,14 @@ function PaywallForm({ value, onChange }: FormProps) {
           onChange={(e) => onChange({ ...value, title: e.target.value })}
         />
       </Field>
-      <Field label="Plan keys shown on paywall" hint="Keys must exist in the funnel's Plans section.">
-        <StringListInput values={planKeys} setValues={setPlanKeys} placeholder="yearly_premium_trial" />
-      </Field>
-      <Field label="Default plan key">
-        <Input
-          value={(value.default_plan_key as string) ?? ''}
-          onChange={(e) => onChange({ ...value, default_plan_key: e.target.value })}
-          placeholder="yearly_premium_trial"
-        />
-      </Field>
+      <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        <p className="font-semibold text-foreground">Plans are funnel-level now.</p>
+        <p className="mt-1">
+          The paywall will show every plan you enabled on the <strong>Plans</strong> tab, with
+          interval tabs + credit-tier dropdown. Default interval and default plan come from the
+          Plans tab too.
+        </p>
+      </div>
       <Field label="Features bullet list">
         <StringListInput
           values={features}
@@ -448,9 +630,12 @@ function SuccessForm({ value, onChange }: FormProps) {
 export const STEP_FORMS: Record<StepType, (props: FormProps) => ReactElement> = {
   'email-capture': EmailCaptureForm,
   welcome: WelcomeForm,
+  narrative: NarrativeForm,
   'quiz-single': QuizSingleForm,
   'quiz-multi': QuizMultiForm,
   'number-picker': NumberPickerForm,
+  'time-picker': TimePickerForm,
+  statement: StatementForm,
   'genre-picker': GenrePickerForm,
   crafting: CraftingForm,
   paywall: PaywallForm,
@@ -463,10 +648,16 @@ export function defaultConfigFor(type: StepType): Config {
       return { title: 'Start here', subtitle: "We'll send your account here.", cta_label: 'Continue' }
     case 'welcome':
       return { title: 'Welcome', body_md: '', cta_label: 'Continue' }
+    case 'narrative':
+      return {
+        title: "Let's make this adventure about you",
+        subtitle: '',
+        bullets: [],
+        cta_label: 'Continue',
+      }
     case 'quiz-single':
       return {
         title: 'Quiz question',
-        profile_column: null,
         required: true,
         layout: 'vertical',
         options: [{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }],
@@ -474,19 +665,34 @@ export function defaultConfigFor(type: StepType): Config {
     case 'quiz-multi':
       return {
         title: 'Quiz question',
-        profile_column: null,
         min: 1,
         max: 3,
         options: [{ value: 'a', label: 'Option A' }],
       }
     case 'number-picker':
       return { title: 'Pick a number', min: 0, max: 10, default: 5, step: 1, unit_label: '' }
+    case 'time-picker':
+      return {
+        title: '21 days is a great start to building healthy habits',
+        subtitle: 'Notifications will help you stay on track',
+        default_hour: 9,
+        default_minute: 0,
+        default_period: 'AM',
+        minute_step: 5,
+        cta_label: 'Continue',
+      }
+    case 'statement':
+      return {
+        title: 'Do you relate to the statement?',
+        statement: "I enjoy music, but it's hard for me to make my own",
+        required: true,
+      }
     case 'genre-picker':
       return { title: 'Pick genres', min: 1, max: 5, genres: [] }
     case 'crafting':
       return { title: 'Crafting your experience…', duration_ms: 5000, messages: ['Loading…'] }
     case 'paywall':
-      return { title: 'Upgrade', plan_keys: [], default_plan_key: '', features: [] }
+      return { title: 'Upgrade', features: [] }
     case 'success':
       return {
         title: 'Done',
