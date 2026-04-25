@@ -259,33 +259,27 @@ export function useDeleteStep() {
   })
 }
 
-// Swap two adjacent steps' positions. Deferred unique constraint on
-// (funnel_id, position) lets both UPDATEs run in the same transaction.
+// Reorder by passing the entire ordered id list. The reorder_funnel_steps
+// Postgres function reassigns positions atomically inside a single
+// transaction so the deferrable unique on (funnel_id, position) holds.
+// Drag-and-drop in the UI sends an arbitrary new order; up/down arrows
+// send a 2-element swap encoded as the same full list.
 export function useReorderSteps() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (input: {
       funnel_id: string
       funnel_slug: string
-      a: { id: string; position: number }
-      b: { id: string; position: number }
+      step_ids: string[]
     }) => {
-      // Temporary swap via a negative sentinel, since two separate UPDATE
-      // statements (not in a txn from the client) can't rely on the
-      // DEFERRABLE flag. Using -1 as a stash column avoids the conflict.
-      const stash = -1
-      const res1 = await supabase.from('funnel_steps')
-        .update({ position: stash }).eq('id', input.a.id)
-      if (res1.error) throw res1.error
-      const res2 = await supabase.from('funnel_steps')
-        .update({ position: input.a.position }).eq('id', input.b.id)
-      if (res2.error) throw res2.error
-      const res3 = await supabase.from('funnel_steps')
-        .update({ position: input.b.position }).eq('id', input.a.id)
-      if (res3.error) throw res3.error
+      const { error } = await supabase.rpc('reorder_funnel_steps', {
+        p_funnel_id: input.funnel_id,
+        p_step_ids: input.step_ids,
+      })
+      if (error) throw error
       await bustFunnelCache(input.funnel_slug)
       logAudit('funnel_step.reorder', 'funnel', input.funnel_id, {
-        swapped: [input.a.id, input.b.id],
+        order: input.step_ids,
       })
     },
     onSuccess: (_data, vars) => {

@@ -102,7 +102,11 @@ export function StepEditor({
     }
   }, [showPreview])
 
-  // Reset state whenever the dialog opens for a different step/new entry.
+  // Reset state every time the dialog opens. In create mode `initial?.id`
+  // is undefined and never changes between opens, so we can't depend on
+  // it — without this, two consecutive "Add step" clicks reuse the last
+  // session's config and the new dialog renders e.g. gender's options
+  // under a goals preset.
   useEffect(() => {
     if (!open) return
     const resolved =
@@ -117,7 +121,7 @@ export function StepEditor({
         : { ...defaultConfigFor(p.stepType), ...(p.configPatch ?? {}) },
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initial?.id])
+  }, [open, mode, initial?.id])
 
   const handlePresetChange = (nextId: string) => {
     const next = findPreset(nextId)

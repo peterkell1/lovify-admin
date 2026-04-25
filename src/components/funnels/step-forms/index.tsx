@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactElement } from 'react'
+import { useEffect, type ReactElement } from 'react'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import type { QuizOption, StepType } from '@/types/funnels'
@@ -107,13 +107,17 @@ function WelcomeForm({ value, onChange }: FormProps) {
 
 function NarrativeForm({ value, onChange }: FormProps) {
   type Bullet = { emoji?: string; text: string }
-  const [bullets, setBullets] = useState<Bullet[]>(
-    Array.isArray(value.bullets) ? (value.bullets as Bullet[]) : [],
-  )
-  useEffect(() => {
-    onChange({ ...value, bullets })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bullets])
+  const bullets: Bullet[] = Array.isArray(value.bullets)
+    ? (value.bullets as Bullet[])
+    : []
+  const setBullets = (
+    next: Bullet[] | ((prev: Bullet[]) => Bullet[]),
+  ) =>
+    onChange({
+      ...value,
+      bullets:
+        typeof next === 'function' ? (next as (p: Bullet[]) => Bullet[])(bullets) : next,
+    })
 
   const update = (i: number, patch: Partial<Bullet>) =>
     setBullets((curr) => curr.map((b, idx) => (idx === i ? { ...b, ...patch } : b)))
@@ -208,13 +212,17 @@ function NarrativeForm({ value, onChange }: FormProps) {
 }
 
 function QuizSingleForm({ value, onChange }: FormProps) {
-  const [options, setOptions] = useState<QuizOption[]>(
-    Array.isArray(value.options) ? (value.options as QuizOption[]) : [],
-  )
-  useEffect(() => {
-    onChange({ ...value, options })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [options])
+  // Drive options directly from `value` — a local useState would
+  // initialize once on mount and then leak stale options into the
+  // parent when the dialog is reopened for a different preset.
+  const options: QuizOption[] = Array.isArray(value.options)
+    ? (value.options as QuizOption[])
+    : []
+  const setOptions = (next: QuizOption[] | ((prev: QuizOption[]) => QuizOption[])) =>
+    onChange({
+      ...value,
+      options: typeof next === 'function' ? (next as (p: QuizOption[]) => QuizOption[])(options) : next,
+    })
 
   return (
     <>
@@ -257,13 +265,14 @@ function QuizSingleForm({ value, onChange }: FormProps) {
 }
 
 function QuizMultiForm({ value, onChange }: FormProps) {
-  const [options, setOptions] = useState<QuizOption[]>(
-    Array.isArray(value.options) ? (value.options as QuizOption[]) : [],
-  )
-  useEffect(() => {
-    onChange({ ...value, options })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [options])
+  const options: QuizOption[] = Array.isArray(value.options)
+    ? (value.options as QuizOption[])
+    : []
+  const setOptions = (next: QuizOption[] | ((prev: QuizOption[]) => QuizOption[])) =>
+    onChange({
+      ...value,
+      options: typeof next === 'function' ? (next as (p: QuizOption[]) => QuizOption[])(options) : next,
+    })
 
   return (
     <>
@@ -456,13 +465,15 @@ function StatementForm({ value, onChange }: FormProps) {
 }
 
 function GenrePickerForm({ value, onChange }: FormProps) {
-  const [genres, setGenres] = useState<QuizOption[]>(
-    Array.isArray(value.genres) ? (value.genres as QuizOption[]) : [],
-  )
-  useEffect(() => {
-    onChange({ ...value, genres })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [genres])
+  const genres: QuizOption[] = Array.isArray(value.genres)
+    ? (value.genres as QuizOption[])
+    : []
+  const setGenres = (next: QuizOption[] | ((prev: QuizOption[]) => QuizOption[])) =>
+    onChange({
+      ...value,
+      genres:
+        typeof next === 'function' ? (next as (p: QuizOption[]) => QuizOption[])(genres) : next,
+    })
 
   return (
     <>
@@ -496,13 +507,15 @@ function GenrePickerForm({ value, onChange }: FormProps) {
 }
 
 function CraftingForm({ value, onChange }: FormProps) {
-  const [messages, setMessages] = useState<string[]>(
-    Array.isArray(value.messages) ? (value.messages as string[]) : [],
-  )
-  useEffect(() => {
-    onChange({ ...value, messages })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages])
+  const messages: string[] = Array.isArray(value.messages)
+    ? (value.messages as string[])
+    : []
+  const setMessages = (next: string[] | ((prev: string[]) => string[])) =>
+    onChange({
+      ...value,
+      messages:
+        typeof next === 'function' ? (next as (p: string[]) => string[])(messages) : next,
+    })
 
   return (
     <>
@@ -534,16 +547,28 @@ function PaywallForm({ value, onChange }: FormProps) {
   // plan_keys and default_plan_key are funnel-level now (see Plans tab).
   // We clear any legacy per-step values on first render so the step's
   // paywall shows every enabled plan instead of an old allowlist subset.
-  const [features, setFeatures] = useState<string[]>(
-    Array.isArray(value.features) ? (value.features as string[]) : [],
-  )
+  const features: string[] = Array.isArray(value.features)
+    ? (value.features as string[])
+    : []
+  const setFeatures = (next: string[] | ((prev: string[]) => string[])) => {
+    const nextFeatures =
+      typeof next === 'function' ? (next as (p: string[]) => string[])(features) : next
+    const merged: Record<string, unknown> = { ...value, features: nextFeatures }
+    if ('plan_keys' in merged) delete merged.plan_keys
+    if ('default_plan_key' in merged) delete merged.default_plan_key
+    onChange(merged)
+  }
+  // One-shot cleanup of legacy step-level plan keys carried over from
+  // older funnels — the Plans tab is the source of truth now.
   useEffect(() => {
-    const next: Record<string, unknown> = { ...value, features }
-    if ('plan_keys' in next) delete next.plan_keys
-    if ('default_plan_key' in next) delete next.default_plan_key
-    onChange(next)
+    if ('plan_keys' in value || 'default_plan_key' in value) {
+      const cleaned: Record<string, unknown> = { ...value }
+      delete cleaned.plan_keys
+      delete cleaned.default_plan_key
+      onChange(cleaned)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [features])
+  }, [])
 
   return (
     <>

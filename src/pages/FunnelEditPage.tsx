@@ -236,12 +236,16 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
           config: draft.config,
         })
       } else if (stepDialog?.mode === 'edit' && draft.id) {
+        // step_key is deliberately NOT in the patch. Once a step is
+        // created, its key is frozen — rewriting it orphans any
+        // funnel_answers rows that reference the old key, breaks the
+        // funnel's client-side cached links, and surfaces as
+        // step_mismatch 400s on playback.
         await updateStep.mutateAsync({
           id: draft.id,
           funnel_id: funnel.id,
           funnel_slug: funnel.slug,
           patch: {
-            step_key: draft.step_key,
             config: draft.config,
           },
         })
@@ -268,16 +272,12 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
     }
   }
 
-  const handleMove = async (step: FunnelStep, dir: 'up' | 'down') => {
-    const idx = steps.findIndex((s) => s.id === step.id)
-    const target = dir === 'up' ? steps[idx - 1] : steps[idx + 1]
-    if (!target) return
+  const handleReorder = async (orderedIds: string[]) => {
     try {
       await reorder.mutateAsync({
         funnel_id: funnel.id,
         funnel_slug: funnel.slug,
-        a: { id: step.id, position: step.position },
-        b: { id: target.id, position: target.position },
+        step_ids: orderedIds,
       })
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to reorder')
@@ -374,7 +374,7 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
               steps={steps}
               onEdit={(s) => setStepDialog({ mode: 'edit', step: s })}
               onDelete={(s) => setConfirmDeleteStep(s)}
-              onMove={handleMove}
+              onReorder={handleReorder}
               busy={reorder.isPending}
             />
           </CardContent>
