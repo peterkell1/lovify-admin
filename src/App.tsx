@@ -16,6 +16,7 @@ import AuditLogPage from '@/pages/AuditLogPage'
 import FunnelsPage from '@/pages/FunnelsPage'
 import FunnelDetailPage from '@/pages/FunnelDetailPage'
 import FunnelEditPage from '@/pages/FunnelEditPage'
+import FunnelTemplatesPage from '@/pages/FunnelTemplatesPage'
 import FunnelAnalyticsPage from '@/pages/FunnelAnalyticsPage'
 
 const queryClient = new QueryClient({
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="users/:userId" element={<UserDetailPage />} />
             <Route path="content" element={<ContentPage />} />
             <Route path="funnels" element={<FunnelsPage />} />
+            <Route path="funnels/new/templates" element={<FunnelTemplatesPage />} />
             <Route path="funnels/new" element={<FunnelEditPage mode="create" />} />
             <Route path="funnels/:id" element={<FunnelDetailPage />} />
             <Route path="funnels/:id/edit" element={<FunnelEditPage mode="edit" />} />

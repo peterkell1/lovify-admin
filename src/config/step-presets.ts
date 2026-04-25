@@ -80,9 +80,9 @@ export const STEP_PRESETS: StepPreset[] = [
       layout: 'horizontal',
       required: false,
       options: [
-        { value: 'female', label: 'Female' },
-        { value: 'male', label: 'Male' },
-        { value: 'other', label: 'Other' },
+        { value: 'female', label: 'Female', image_asset_key: 'general/woman.svg' },
+        { value: 'male', label: 'Male', image_asset_key: 'general/man.svg' },
+        { value: 'other', label: 'Other', image_asset_key: 'general/other.jpg' },
       ],
     },
   },

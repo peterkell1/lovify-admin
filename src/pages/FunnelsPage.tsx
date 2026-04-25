@@ -38,7 +38,7 @@ export default function FunnelsPage() {
             )}
           </p>
         </div>
-        <Button onClick={() => navigate('/funnels/new')}>
+        <Button onClick={() => navigate('/funnels/new/templates')}>
           <Plus className="h-4 w-4" /> New funnel
         </Button>
       </div>
@@ -84,7 +84,7 @@ export default function FunnelsPage() {
             <p className="mt-1 text-sm text-tertiary">
               Create your first funnel to start running paid ad traffic.
             </p>
-            <Button className="mt-6" onClick={() => navigate('/funnels/new')}>
+            <Button className="mt-6" onClick={() => navigate('/funnels/new/templates')}>
               <Plus className="h-4 w-4" /> New funnel
             </Button>
           </CardContent>

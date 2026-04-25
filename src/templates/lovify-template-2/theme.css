@@ -1,0 +1,90 @@
+/* Mirror of lovify-funnel/src/templates/lovify-template-2/theme.css.
+ * Kept in sync manually. Scoped under .lt2-root so tokens never leak
+ * into other templates rendered on the same page. */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+.lt2-root {
+  --lt2-bg: #faf6ef;
+  --lt2-fg: #1a1611;
+  --lt2-muted: #7a6f60;
+  --lt2-card: #f3ece1;
+  --lt2-card-soft: #f7f1e6;
+  --lt2-border: #e5dccb;
+  --lt2-cta-bg: #1f1813;
+  --lt2-cta-fg: #ffffff;
+  --lt2-accent: #b9805a;
+  --lt2-radius: 18px;
+  --lt2-radius-pill: 9999px;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--lt2-bg);
+  color: var(--lt2-fg);
+  min-height: 100%;
+}
+
+.lt2-root * { box-sizing: border-box; }
+
+.lt2-headline {
+  font-weight: 800;
+  letter-spacing: -0.012em;
+  line-height: 1.08;
+}
+
+.lt2-cta {
+  background: var(--lt2-cta-bg);
+  color: var(--lt2-cta-fg);
+  border-radius: var(--lt2-radius-pill);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: transform 120ms ease, opacity 120ms ease, box-shadow 120ms ease;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 8px 24px -12px rgba(31,24,19,0.35);
+}
+.lt2-cta:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06), 0 12px 28px -10px rgba(31,24,19,0.45);
+}
+.lt2-cta:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+.lt2-card { background: var(--lt2-card); border-radius: var(--lt2-radius); border: 1px solid var(--lt2-border); }
+
+.lt2-row {
+  background: #ffffff;
+  border: 1px solid var(--lt2-border);
+  border-radius: 12px;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+.lt2-row:hover:not([data-selected='true']) { border-color: rgba(31,24,19,0.3); }
+.lt2-row[data-selected='true'] {
+  background: var(--lt2-card-soft);
+  border-color: var(--lt2-fg);
+  box-shadow: 0 0 0 1px var(--lt2-fg);
+}
+
+.lt2-radio, .lt2-check {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  border: 1.5px solid #c8c0b4;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.lt2-check { border-radius: 8px; }
+.lt2-radio[data-checked='true'], .lt2-check[data-checked='true'] {
+  background: var(--lt2-fg);
+  border-color: var(--lt2-fg);
+  color: #ffffff;
+}
+
+.lt2-icon-btn { background: transparent; }
+
+.lt2-progress-track {
+  height: 3px;
+  background: var(--lt2-border);
+  border-radius: 0;
+  overflow: hidden;
+}
+.lt2-progress-fill { height: 100%; background: var(--lt2-fg); transition: width 320ms ease-out; }

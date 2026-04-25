@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img" aria-label="Couple — Preoccupied placeholder">
+  <rect width="800" height="600" fill="#e9dcc7"/>
+  <!-- One reaches forward, other looks away -->
+  <g fill="#3b2f24" opacity="0.85">
+    <!-- Reaching figure -->
+    <circle cx="280" cy="240" r="76"/>
+    <path d="M180 600 C 180 440, 240 360, 280 360 C 320 360, 380 440, 380 600 Z"/>
+    <!-- Distant figure -->
+    <circle cx="540" cy="220" r="76"/>
+    <path d="M460 600 C 460 440, 500 360, 540 360 C 580 360, 620 440, 620 600 Z"/>
+  </g>
+  <text x="400" y="560" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" fill="#ffffff" font-weight="700" letter-spacing="3">PREOCCUPIED</text>
+</svg>

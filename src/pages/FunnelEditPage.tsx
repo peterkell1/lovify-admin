@@ -22,6 +22,8 @@ import { StepEditor, type StepEditorDraft } from '@/components/funnels/StepEdito
 import { PaywallPlanPicker } from '@/components/funnels/PaywallPlanPicker'
 import type { Funnel, FunnelStep, PlanOption } from '@/types/funnels'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Badge } from '@/components/ui/badge'
+import { getAdminTemplateManifest, DEFAULT_TEMPLATE_ID } from '@/templates/registry'
 
 type Props = { mode: 'create' | 'edit' }
 
@@ -50,7 +52,25 @@ export default function FunnelEditPage({ mode }: Props) {
 
 function CreateEntry() {
   const navigate = useNavigate()
-  return <CreateFunnelForm onCreated={(f) => navigate(`/funnels/${f.id}/edit`)} />
+  const [searchParams] = useSearchParams()
+  const templateId = searchParams.get('template')
+
+  // Step 1 of the create flow is the template gallery. If a marketer
+  // hits /funnels/new without a template, send them through the picker.
+  // The picker bounces back here with ?template=<id>.
+  useEffect(() => {
+    if (!templateId) {
+      navigate('/funnels/new/templates', { replace: true })
+    }
+  }, [templateId, navigate])
+
+  if (!templateId) return null
+  return (
+    <CreateFunnelForm
+      templateId={templateId}
+      onCreated={(f) => navigate(`/funnels/${f.id}/edit`)}
+    />
+  )
 }
 
 function EditEntry() {
@@ -68,7 +88,13 @@ function EditEntry() {
   return <EditExisting funnel={data.funnel} steps={data.steps} />
 }
 
-function CreateFunnelForm({ onCreated }: { onCreated: (f: Funnel) => void }) {
+function CreateFunnelForm({
+  templateId,
+  onCreated,
+}: {
+  templateId: string
+  onCreated: (f: Funnel) => void
+}) {
   // `slugInput` is what the user is typing (spaces, caps, anything).
   // `slug` — the slugified version used on save — is derived from it.
   // Decoupling them lets the user type naturally while we show a live
@@ -82,6 +108,11 @@ function CreateFunnelForm({ onCreated }: { onCreated: (f: Funnel) => void }) {
   // stomp their input.
   const [slugTouched, setSlugTouched] = useState(false)
   const create = useCreateFunnel()
+  // Resolve the manifest synchronously — if the URL param is unknown,
+  // fall back to the default. The picker passes only valid ids so
+  // this fallback is mostly defensive.
+  const templateManifest = getAdminTemplateManifest(templateId)
+  const resolvedTemplate = templateManifest.id || DEFAULT_TEMPLATE_ID
 
   const slug = slugify(slugInput)
   const slugError = slugInput && !slug ? 'Enter at least one letter or number' : null
@@ -89,7 +120,12 @@ function CreateFunnelForm({ onCreated }: { onCreated: (f: Funnel) => void }) {
 
   const handleSave = async () => {
     try {
-      const funnel = await create.mutateAsync({ slug, name, description })
+      const funnel = await create.mutateAsync({
+        slug,
+        name,
+        description,
+        template: resolvedTemplate,
+      })
       toast.success('Funnel created')
       onCreated(funnel)
     } catch (e) {
@@ -148,6 +184,22 @@ function CreateFunnelForm({ onCreated }: { onCreated: (f: Funnel) => void }) {
               placeholder="First live funnel for the spring TikTok campaign"
             />
           </Field>
+          <Field
+            label="Template"
+            hint={templateManifest.description}
+          >
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary px-3 py-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Badge variant="outline">{templateManifest.name}</Badge>
+              </div>
+              <Link
+                to="/funnels/new/templates"
+                className="text-xs font-semibold text-orange-600 hover:text-orange-700"
+              >
+                Change
+              </Link>
+            </div>
+          </Field>
           <div className="flex gap-2 pt-2">
             <Link to="/funnels" className="flex-1">
               <Button variant="outline" className="w-full">Cancel</Button>
@@ -169,6 +221,9 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
   const [metaPixelId, setMetaPixelId] = useState(funnel.meta_pixel_id ?? '')
   const [planOptions, setPlanOptions] = useState<PlanOption[]>(funnel.plan_options ?? [])
   const [defaultPlanKey, setDefaultPlanKey] = useState<string | null>(funnel.default_plan_key ?? null)
+  const [mostPopularPlanKey, setMostPopularPlanKey] = useState<string | null>(
+    funnel.most_popular_plan_key ?? null,
+  )
   const [defaultInterval, setDefaultInterval] = useState<Funnel['default_interval']>(
     funnel.default_interval ?? null,
   )
@@ -179,6 +234,7 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
     setMetaPixelId(funnel.meta_pixel_id ?? '')
     setPlanOptions(funnel.plan_options ?? [])
     setDefaultPlanKey(funnel.default_plan_key ?? null)
+    setMostPopularPlanKey(funnel.most_popular_plan_key ?? null)
     setDefaultInterval(funnel.default_interval ?? null)
   }, [funnel])
 
@@ -218,6 +274,7 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
       patch: {
         plan_options: planOptions,
         default_plan_key: defaultPlanKey,
+        most_popular_plan_key: mostPopularPlanKey,
         default_interval: defaultInterval,
       },
     })
@@ -396,6 +453,8 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
                 onChange={setPlanOptions}
                 defaultPlanKey={defaultPlanKey}
                 onDefaultChange={setDefaultPlanKey}
+                mostPopularPlanKey={mostPopularPlanKey}
+                onMostPopularChange={setMostPopularPlanKey}
                 defaultInterval={defaultInterval}
                 onDefaultIntervalChange={setDefaultInterval}
               />
@@ -454,8 +513,10 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
         funnelDefaults={{
           planOptions,
           defaultPlanKey,
+          mostPopularPlanKey,
           defaultInterval,
         }}
+        templateId={funnel.template}
       />
 
       <ConfirmDialog

@@ -4,6 +4,7 @@ import { Select } from '@/components/ui/select'
 import type { QuizOption, StepType } from '@/types/funnels'
 import { Field, OptionList, StringListInput } from './shared'
 import { EmojiInput } from '../EmojiInput'
+import { AssetField } from '../AssetPicker'
 
 type Config = Record<string, unknown>
 
@@ -87,7 +88,13 @@ function WelcomeForm({ value, onChange }: FormProps) {
           ariaLabel="Pick hero emoji"
         />
       </Field>
-      <Field label="Character image URL (optional)" hint="Replaces the hero emoji if provided.">
+      <AssetField
+        label="Image"
+        hint="Picked from the funnel asset library. Wins over the URL field below if both are set."
+        value={(value.image_asset_key as string) ?? null}
+        onChange={(next) => onChange({ ...value, image_asset_key: next ?? '' })}
+      />
+      <Field label="Character image URL (optional)" hint="Legacy free-form URL. Use the asset picker above when possible.">
         <Input
           value={(value.character_image_url as string) ?? ''}
           onChange={(e) => onChange({ ...value, character_image_url: e.target.value })}
@@ -142,7 +149,13 @@ function NarrativeForm({ value, onChange }: FormProps) {
           onChange={(e) => onChange({ ...value, subtitle: e.target.value })}
         />
       </Field>
-      <Field label="Character image URL (optional)">
+      <AssetField
+        label="Image"
+        hint="Picked from the funnel asset library. Wins over the URL field below if both are set."
+        value={(value.image_asset_key as string) ?? null}
+        onChange={(next) => onChange({ ...value, image_asset_key: next ?? '' })}
+      />
+      <Field label="Character image URL (optional)" hint="Legacy free-form URL.">
         <Input
           value={(value.character_image_url as string) ?? ''}
           onChange={(e) => onChange({ ...value, character_image_url: e.target.value })}
@@ -257,8 +270,8 @@ function QuizSingleForm({ value, onChange }: FormProps) {
           Must answer to continue
         </label>
       </Field>
-      <Field label="Options">
-        <OptionList options={options} setOptions={setOptions} />
+      <Field label="Options" hint="Click the 🖼 icon on each option to pick an image from the asset library (required for image-card layout on horizontal 2–3 option steps).">
+        <OptionList options={options} setOptions={setOptions} withImage />
       </Field>
     </>
   )
@@ -434,22 +447,75 @@ function TimePickerForm({ value, onChange }: FormProps) {
 }
 
 function StatementForm({ value, onChange }: FormProps) {
+  type Scale = { max: number; min_label?: string; max_label?: string }
+  const scale = (value.scale as Scale | undefined) ?? null
+  const isLikert = !!scale
+
+  const setScale = (next: Scale | null) => {
+    const merged: Record<string, unknown> = { ...value }
+    if (next) merged.scale = next
+    else delete merged.scale
+    onChange(merged)
+  }
+
   return (
     <>
-      <Field label="Title" hint="The question above the quote, e.g. Do you relate to the statement?">
+      <Field label="Title" hint="The question above the quote.">
         <Input
           value={(value.title as string) ?? ''}
           onChange={(e) => onChange({ ...value, title: e.target.value })}
         />
       </Field>
-      <Field label="Statement">
+      <Field label="Statement (optional in Likert mode)">
         <textarea
           value={(value.statement as string) ?? ''}
           onChange={(e) => onChange({ ...value, statement: e.target.value })}
           className="min-h-[80px] w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm"
-          placeholder="I enjoy music, but it's hard for me to make my own"
+          placeholder="Quote-card body. Leave empty if you only want a Likert scale."
         />
       </Field>
+      <Field label="Mode" hint="Yes/No is a binary card. Likert renders a 1..max numbered scale.">
+        <Select
+          value={isLikert ? 'likert' : 'binary'}
+          onChange={(e) =>
+            setScale(e.target.value === 'likert' ? { max: 5, min_label: 'Strongly disagree', max_label: 'Strongly agree' } : null)
+          }
+        >
+          <option value="binary">Yes / No</option>
+          <option value="likert">Likert scale</option>
+        </Select>
+      </Field>
+      {isLikert ? (
+        <>
+          <Field label="Scale max" hint="Numbers shown go from 1 to this value (3-7 is typical).">
+            <Input
+              type="number"
+              min={2}
+              max={9}
+              value={scale.max}
+              onChange={(e) =>
+                setScale({ ...scale, max: Math.max(2, Math.min(9, Number(e.target.value) || 5)) })
+              }
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Low anchor label">
+              <Input
+                value={scale.min_label ?? ''}
+                onChange={(e) => setScale({ ...scale, min_label: e.target.value })}
+                placeholder="Strongly disagree"
+              />
+            </Field>
+            <Field label="High anchor label">
+              <Input
+                value={scale.max_label ?? ''}
+                onChange={(e) => setScale({ ...scale, max_label: e.target.value })}
+                placeholder="Strongly agree"
+              />
+            </Field>
+          </div>
+        </>
+      ) : null}
       <Field label="Required">
         <label className="flex items-center gap-2 text-sm">
           <input

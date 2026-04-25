@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Lifestyle portrait placeholder">
+  <rect width="600" height="800" fill="#efe1c8"/>
+  <g fill="#3b2f24" opacity="0.85">
+    <circle cx="300" cy="320" r="120"/>
+    <path d="M120 800 C 120 560, 200 460, 300 460 C 400 460, 480 560, 480 800 Z"/>
+  </g>
+</svg>

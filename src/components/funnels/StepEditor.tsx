@@ -6,7 +6,7 @@ import { Select } from '@/components/ui/select'
 import { Field } from './step-forms/shared'
 import { STEP_FORMS, defaultConfigFor } from './step-forms'
 import type { Funnel, FunnelStep, PlanOption, StepType } from '@/types/funnels'
-import { StepPreview } from './preview/StepPreview'
+import { useAdminTemplate } from '@/templates/useAdminTemplate'
 import { cn } from '@/lib/utils'
 import {
   STEP_PRESETS,
@@ -61,6 +61,7 @@ export function StepEditor({
   existingKeys,
   funnelName,
   funnelDefaults,
+  templateId,
 }: {
   open: boolean
   onClose: () => void
@@ -71,7 +72,12 @@ export function StepEditor({
   existingKeys: string[]
   funnelName: string
   funnelDefaults: StepEditorFunnelDefaults
+  // Funnel's selected template id. Drives which preview renderer the
+  // side panel uses. Falls back to the registry default if unknown/null.
+  templateId: string | null | undefined
 }) {
+  const adminTemplate = useAdminTemplate(templateId)
+  const Preview = adminTemplate?.Preview ?? null
   const defaultPresetId = useMemo(() => {
     if (mode === 'edit') {
       const matched = matchPresetForStep(initial)
@@ -115,11 +121,41 @@ export function StepEditor({
         : STEP_PRESETS.find((p) => !alreadyUsed(p, existingKeys))?.id ?? STEP_PRESETS[0].id
     setPresetId(resolved)
     const p = findPreset(resolved) ?? STEP_PRESETS[0]
-    setConfig(
+    let cfg =
       mode === 'edit' && initial?.config
         ? initial.config
-        : { ...defaultConfigFor(p.stepType), ...(p.configPatch ?? {}) },
-    )
+        : { ...defaultConfigFor(p.stepType), ...(p.configPatch ?? {}) }
+
+    // Auto-backfill image_asset_key on horizontal quiz-single options that
+    // have no image set yet. This fixes existing steps saved before the
+    // asset picker was wired up, without requiring manual re-editing.
+    if (
+      (cfg.layout === 'horizontal' || cfg.layout === 'horizontal') &&
+      Array.isArray(cfg.options)
+    ) {
+      const DEFAULT_IMAGES: Record<string, string> = {
+        female: 'general/woman.svg',
+        male: 'general/man.svg',
+        other: 'general/other.jpg',
+      }
+      type Opt = { value: string; image_asset_key?: string; character_image_url?: string }
+      const options = cfg.options as Opt[]
+      const needsBackfill = options.some(
+        (o) => !o.image_asset_key && !o.character_image_url && DEFAULT_IMAGES[o.value],
+      )
+      if (needsBackfill) {
+        cfg = {
+          ...cfg,
+          options: options.map((o) =>
+            !o.image_asset_key && !o.character_image_url && DEFAULT_IMAGES[o.value]
+              ? { ...o, image_asset_key: DEFAULT_IMAGES[o.value] }
+              : o,
+          ),
+        }
+      }
+    }
+
+    setConfig(cfg)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, initial?.id])
 
@@ -281,18 +317,22 @@ export function StepEditor({
               showPreview ? 'opacity-100' : 'opacity-0 pointer-events-none',
             )}
           >
-            <div className="p-6 flex flex-col items-center min-w-[360px]">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3">
+            <div className="p-4 flex flex-col items-center min-w-[360px] h-[75vh]">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3 flex-shrink-0">
                 Live preview
               </p>
-              <div className="w-full flex-1 flex items-start justify-center">
-                <StepPreview
-                  stepType={preset.stepType}
-                  config={config}
-                  stepKey={resolvedStepKey}
-                  funnelName={funnelName}
-                  funnelDefaults={funnelDefaults}
-                />
+              <div className="w-full flex-1 min-h-0 overflow-y-auto">
+                {Preview ? (
+                  <Preview
+                    stepType={preset.stepType}
+                    config={config}
+                    stepKey={resolvedStepKey}
+                    funnelName={funnelName}
+                    funnelDefaults={funnelDefaults}
+                  />
+                ) : (
+                  <div className="text-xs text-muted-foreground py-12">Loading template…</div>
+                )}
               </div>
             </div>
           </div>

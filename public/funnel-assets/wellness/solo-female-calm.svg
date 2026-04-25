@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Calm female portrait placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7ecda"/>
+      <stop offset="1" stop-color="#d3bb96"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#bg)"/>
+  <g fill="#3b2f24" opacity="0.85">
+    <path d="M180 320 C 180 220, 220 180, 300 180 C 380 180, 420 220, 420 320 C 440 360, 440 420, 420 460 C 400 460, 200 460, 180 460 C 160 420, 160 360, 180 320 Z"/>
+    <path d="M120 800 C 120 600, 200 480, 300 480 C 400 480, 480 600, 480 800 Z"/>
+  </g>
+</svg>

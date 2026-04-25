@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
+import { Check, ChevronDown, Star } from 'lucide-react'
 import { Select } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import type { PlanOption } from '@/types/funnels'
@@ -29,6 +29,8 @@ export function PaywallPlanPicker({
   onChange,
   defaultPlanKey,
   onDefaultChange,
+  mostPopularPlanKey,
+  onMostPopularChange,
   defaultInterval,
   onDefaultIntervalChange,
 }: {
@@ -36,6 +38,11 @@ export function PaywallPlanPicker({
   onChange: (next: PlanOption[]) => void
   defaultPlanKey: string | null
   onDefaultChange: (next: string | null) => void
+  // Drives the "MOST POPULAR" ribbon in templates that surface it
+  // (lovify-template-2). null means "mirror the default plan" — the
+  // funnel renderer falls back to defaultPlanKey when this is null.
+  mostPopularPlanKey: string | null
+  onMostPopularChange: (next: string | null) => void
   defaultInterval: LovifyIntervalKey | null
   onDefaultIntervalChange: (next: LovifyIntervalKey | null) => void
 }) {
@@ -63,8 +70,19 @@ export function PaywallPlanPicker({
       if (defaultPlanKey === plan.id) {
         onDefaultChange(next[0]?.planKey ?? null)
       }
+      // Keep most-popular consistent — fall back to null (which means
+      // "mirror default") if the marketer disables the explicitly-marked
+      // most-popular plan.
+      if (mostPopularPlanKey === plan.id) {
+        onMostPopularChange(null)
+      }
     }
   }
+
+  // Effective most-popular: explicit marketer pick, or the default plan
+  // if they haven't chosen separately. Used to show the ribbon-marker
+  // in the right place when the radio hasn't been touched.
+  const effectiveMostPopular = mostPopularPlanKey ?? defaultPlanKey
 
   const intervalHasEnabled = (key: LovifyIntervalKey) =>
     LOVIFY_PLANS_BY_INTERVAL[key].some((p) => enabledKeys.has(p.id))
@@ -118,6 +136,32 @@ export function PaywallPlanPicker({
             </p>
           </div>
         </div>
+        <div className="border-t border-border pt-3 space-y-1">
+          <span className="text-xs font-semibold text-foreground">Most popular plan</span>
+          <div className="rounded-md border border-input bg-secondary px-3 py-2 text-sm flex items-center justify-between gap-2">
+            <span className="font-semibold text-foreground inline-flex items-center gap-1.5">
+              <Star className="h-3.5 w-3.5 text-amber-500" />
+              {effectiveMostPopular
+                ? (value.find((p) => p.planKey === effectiveMostPopular)?.label ?? effectiveMostPopular)
+                : <span className="text-muted-foreground">Pick a plan below</span>}
+            </span>
+            {mostPopularPlanKey && mostPopularPlanKey !== defaultPlanKey ? (
+              <button
+                type="button"
+                onClick={() => onMostPopularChange(null)}
+                className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+              >
+                Reset to default
+              </button>
+            ) : null}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Card with the "MOST POPULAR" ribbon in templates that surface it.
+            {mostPopularPlanKey == null && defaultPlanKey
+              ? ' Defaults to the default plan.'
+              : null}
+          </p>
+        </div>
       </div>
 
       {/* Catalog grouped by interval */}
@@ -128,8 +172,11 @@ export function PaywallPlanPicker({
           plans={LOVIFY_PLANS_BY_INTERVAL[key]}
           enabledKeys={enabledKeys}
           defaultPlanKey={defaultPlanKey}
+          effectiveMostPopular={effectiveMostPopular}
+          mostPopularExplicit={mostPopularPlanKey}
           onToggle={togglePlan}
           onPickDefault={(planId) => onDefaultChange(planId)}
+          onPickMostPopular={(planId) => onMostPopularChange(planId)}
         />
       ))}
 
@@ -149,15 +196,21 @@ function CatalogGroup({
   plans,
   enabledKeys,
   defaultPlanKey,
+  effectiveMostPopular,
+  mostPopularExplicit,
   onToggle,
   onPickDefault,
+  onPickMostPopular,
 }: {
   intervalKey: LovifyIntervalKey
   plans: LovifyPlan[]
   enabledKeys: Set<string>
   defaultPlanKey: string | null
+  effectiveMostPopular: string | null
+  mostPopularExplicit: string | null
   onToggle: (plan: LovifyPlan, enabled: boolean) => void
   onPickDefault: (planId: string) => void
+  onPickMostPopular: (planId: string) => void
 }) {
   const enabledCount = plans.filter((p) => enabledKeys.has(p.id)).length
   // Open by default only if this group has enabled plans — collapsed
@@ -206,6 +259,7 @@ function CatalogGroup({
         {plans.map((plan) => {
           const isEnabled = enabledKeys.has(plan.id)
           const isDefault = defaultPlanKey === plan.id
+          const isPopular = effectiveMostPopular === plan.id
           return (
             <li key={plan.id} className="flex items-center gap-3 px-4 py-3">
               <input
@@ -239,28 +293,57 @@ function CatalogGroup({
                   ) : null}
                 </div>
               </div>
-              <label
-                className={cn(
-                  'flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer whitespace-nowrap',
-                  isEnabled ? 'text-foreground' : 'text-muted-foreground/60 cursor-not-allowed',
-                )}
-              >
-                <input
-                  type="radio"
-                  name="default-plan"
-                  checked={isDefault}
-                  disabled={!isEnabled}
-                  onChange={() => onPickDefault(plan.id)}
-                  className="text-orange-500 focus:ring-orange-500"
-                />
-                {isDefault ? (
-                  <span className="inline-flex items-center gap-1 text-orange-600">
-                    <Check className="h-3 w-3" /> Default
-                  </span>
-                ) : (
-                  'Set default'
-                )}
-              </label>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <label
+                  className={cn(
+                    'flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer whitespace-nowrap',
+                    isEnabled ? 'text-foreground' : 'text-muted-foreground/60 cursor-not-allowed',
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="default-plan"
+                    checked={isDefault}
+                    disabled={!isEnabled}
+                    onChange={() => onPickDefault(plan.id)}
+                    className="text-orange-500 focus:ring-orange-500"
+                  />
+                  {isDefault ? (
+                    <span className="inline-flex items-center gap-1 text-orange-600">
+                      <Check className="h-3 w-3" /> Default
+                    </span>
+                  ) : (
+                    'Set default'
+                  )}
+                </label>
+                <label
+                  className={cn(
+                    'flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer whitespace-nowrap',
+                    isEnabled ? 'text-foreground' : 'text-muted-foreground/60 cursor-not-allowed',
+                  )}
+                  title={
+                    mostPopularExplicit == null && isPopular
+                      ? 'Mirroring default. Pick another plan to override.'
+                      : undefined
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="most-popular-plan"
+                    checked={isPopular}
+                    disabled={!isEnabled}
+                    onChange={() => onPickMostPopular(plan.id)}
+                    className="text-amber-500 focus:ring-amber-500"
+                  />
+                  {isPopular ? (
+                    <span className="inline-flex items-center gap-1 text-amber-600">
+                      <Star className="h-3 w-3" /> Most popular
+                    </span>
+                  ) : (
+                    'Set popular'
+                  )}
+                </label>
+              </div>
             </li>
           )
         })}

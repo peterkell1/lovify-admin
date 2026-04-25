@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-label="Male portrait placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#efe3d2"/>
+      <stop offset="1" stop-color="#d6c2a5"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#bg)"/>
+  <!-- Silhouette: head + shoulders, abstracted -->
+  <circle cx="300" cy="320" r="120" fill="#3b2f24" opacity="0.85"/>
+  <path d="M120 800 C 120 600, 200 500, 300 500 C 400 500, 480 600, 480 800 Z" fill="#3b2f24" opacity="0.85"/>
+  <text x="300" y="760" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" fill="#ffffff" font-weight="700" letter-spacing="2">MALE</text>
+</svg>

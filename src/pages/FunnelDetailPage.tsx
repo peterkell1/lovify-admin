@@ -1,8 +1,8 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Copy, Edit, BarChart3, Trash2, Play, Pause } from 'lucide-react'
+import { ArrowLeft, Copy, Edit, BarChart3, Trash2, Play, Pause, Palette } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { useFunnel, usePublishFunnel, useDeleteFunnel } from '@/hooks/use-funnels'
+import { useFunnel, usePublishFunnel, useDeleteFunnel, useUpdateFunnel } from '@/hooks/use-funnels'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +10,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { formatDate } from '@/lib/utils'
 import { STEP_TYPE_LABEL } from '@/types/funnels'
+import { getAdminTemplateManifest } from '@/templates/registry'
+import { TemplatePreviewDialog } from '@/components/funnels/TemplatePreviewDialog'
+import { ChangeTemplateDialog } from '@/components/funnels/ChangeTemplateDialog'
+import type { AdminTemplateManifest } from '@/templates/types'
 
 export default function FunnelDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -17,7 +21,13 @@ export default function FunnelDetailPage() {
   const { data, isLoading } = useFunnel(id)
   const publish = usePublishFunnel()
   const del = useDeleteFunnel()
+  const update = useUpdateFunnel()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [previewTemplateOpen, setPreviewTemplateOpen] = useState(false)
+  const [changeTemplateOpen, setChangeTemplateOpen] = useState(false)
+  // Template the user picked in the gallery — held in state so the
+  // confirm step can show its name. Cleared on cancel/confirm.
+  const [pendingTemplate, setPendingTemplate] = useState<AdminTemplateManifest | null>(null)
   const funnelBaseUrl = import.meta.env.VITE_FUNNEL_BASE_URL
 
   if (isLoading || !data) {
@@ -60,6 +70,27 @@ export default function FunnelDetailPage() {
     navigate('/funnels')
   }
 
+  const handlePickTemplate = (m: AdminTemplateManifest) => {
+    setChangeTemplateOpen(false)
+    setPendingTemplate(m)
+  }
+
+  const handleConfirmTemplate = async () => {
+    if (!pendingTemplate) return
+    try {
+      await update.mutateAsync({
+        id: funnel.id,
+        slug: funnel.slug,
+        patch: { template: pendingTemplate.id },
+      })
+      toast.success(`Switched to ${pendingTemplate.name}`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to change template')
+    } finally {
+      setPendingTemplate(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Link to="/funnels" className="inline-flex items-center gap-2 text-sm text-tertiary hover:text-foreground">
@@ -68,11 +99,21 @@ export default function FunnelDetailPage() {
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold text-foreground">{funnel.name}</h1>
             <Badge variant={funnel.status === 'live' ? 'default' : 'secondary'}>
               {funnel.status}
             </Badge>
+            <button
+              type="button"
+              onClick={() => setPreviewTemplateOpen(true)}
+              title="Preview this template"
+              className="cursor-pointer"
+            >
+              <Badge variant="outline" className="hover:bg-foreground/5 transition">
+                {getAdminTemplateManifest(funnel.template).name}
+              </Badge>
+            </button>
           </div>
           <p className="mt-1 font-mono text-sm text-tertiary">/{funnel.slug}</p>
         </div>
@@ -87,6 +128,14 @@ export default function FunnelDetailPage() {
               <Edit className="h-4 w-4" /> Edit
             </Button>
           </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setChangeTemplateOpen(true)}
+            disabled={update.isPending}
+          >
+            <Palette className="h-4 w-4" /> Change template
+          </Button>
           <Button size="sm" onClick={handleStatusToggle} disabled={publish.isPending}>
             {funnel.status === 'live' ? (
               <><Pause className="h-4 w-4" /> Pause</>
@@ -190,6 +239,34 @@ export default function FunnelDetailPage() {
         confirmLabel="Delete"
         variant="destructive"
         loading={del.isPending}
+      />
+
+      <TemplatePreviewDialog
+        open={previewTemplateOpen}
+        onClose={() => setPreviewTemplateOpen(false)}
+        templateId={funnel.template}
+        funnelName={funnel.name}
+      />
+
+      <ChangeTemplateDialog
+        open={changeTemplateOpen}
+        onClose={() => setChangeTemplateOpen(false)}
+        currentTemplateId={funnel.template}
+        onSelect={handlePickTemplate}
+      />
+
+      <ConfirmDialog
+        open={!!pendingTemplate}
+        onClose={() => setPendingTemplate(null)}
+        title={`Switch to ${pendingTemplate?.name ?? ''}?`}
+        description={
+          funnel.status === 'live'
+            ? `This funnel is live. End users will see the new look on next visit (within ~60s). Step content and plans carry over.`
+            : `Step content and plans carry over — only the look changes.`
+        }
+        onConfirm={handleConfirmTemplate}
+        confirmLabel="Switch template"
+        loading={update.isPending}
       />
     </div>
   )

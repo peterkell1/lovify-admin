@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500" role="img" aria-label="Group of people placeholder">
+  <rect width="800" height="500" fill="#f3e5cc"/>
+  <!-- Four silhouettes side by side -->
+  <g fill="#3b2f24" opacity="0.85">
+    <circle cx="180" cy="180" r="60"/>
+    <path d="M100 500 C 100 340, 140 280, 180 280 C 220 280, 260 340, 260 500 Z"/>
+
+    <circle cx="340" cy="170" r="60"/>
+    <path d="M260 500 C 260 330, 300 270, 340 270 C 380 270, 420 330, 420 500 Z"/>
+
+    <circle cx="500" cy="180" r="60"/>
+    <path d="M420 500 C 420 340, 460 280, 500 280 C 540 280, 580 340, 580 500 Z"/>
+
+    <circle cx="660" cy="170" r="60"/>
+    <path d="M580 500 C 580 330, 620 270, 660 270 C 700 270, 740 330, 740 500 Z"/>
+  </g>
+</svg>

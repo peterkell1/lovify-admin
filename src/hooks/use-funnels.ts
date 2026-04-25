@@ -103,6 +103,7 @@ export function useCreateFunnel() {
       name: string
       description?: string
       default_plan_key?: string
+      template?: string
     }) => {
       const { data: { session } } = await supabase.auth.getSession()
       const { data, error } = await supabase
@@ -112,12 +113,19 @@ export function useCreateFunnel() {
           name: input.name,
           description: input.description ?? null,
           default_plan_key: input.default_plan_key ?? null,
+          // Omit when not provided — the column has a DB default of
+          // 'lovify-music-v1' (see 20260425020000_funnels_default_template).
+          ...(input.template ? { template: input.template } : {}),
           created_by: session?.user.id ?? null,
         })
         .select('*')
         .single()
       if (error) throw error
-      logAudit('funnel.create', 'funnel', data.id, { slug: data.slug, name: data.name })
+      logAudit('funnel.create', 'funnel', data.id, {
+        slug: data.slug,
+        name: data.name,
+        template: data.template,
+      })
       return data as Funnel
     },
     onSuccess: () => {

@@ -44,7 +44,7 @@ export const STEP_TYPE_LABEL: Record<StepType, string> = {
   success: 'Success',
 }
 
-export type QuizOption = { value: string; label: string; emoji?: string }
+export type QuizOption = { value: string; label: string; emoji?: string; image_asset_key?: string; character_image_url?: string }
 
 export type PlanOption = {
   planKey: string
@@ -66,6 +66,10 @@ export type Funnel = {
   theme: Record<string, unknown>
   meta_pixel_id: string | null
   default_plan_key: string | null
+  // Plan to render the "MOST POPULAR" ribbon on in templates that
+  // surface it (lovify-template-2). Defaults to the default plan when
+  // null — see PaywallPlanPicker for the auto-mirror logic.
+  most_popular_plan_key: string | null
   default_interval: 'trial' | 'year' | 'month' | 'quarter' | null
   plan_options: PlanOption[]
   created_by: string | null
