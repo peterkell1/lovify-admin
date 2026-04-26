@@ -140,7 +140,7 @@ export function useUpdateFunnel() {
     mutationFn: async (input: { id: string; slug: string; patch: Partial<Funnel> }) => {
       const { error } = await supabase.from('funnels').update(input.patch).eq('id', input.id)
       if (error) throw error
-      await bustFunnelCache(input.slug)
+      bustFunnelCache(input.slug).catch((e) => console.warn('[bustFunnelCache]', e?.message ?? e))
       logAudit('funnel.update', 'funnel', input.id, {
         fields: Object.keys(input.patch),
       })
@@ -162,7 +162,11 @@ export function usePublishFunnel() {
       }
       const { error } = await supabase.from('funnels').update(patch).eq('id', input.id)
       if (error) throw error
-      await bustFunnelCache(input.slug)
+      // Cache bust is best-effort — a miss means the funnel app will pick up
+      // the change within its SSR TTL (~60s). Don't block publish on it.
+      bustFunnelCache(input.slug).catch((e) =>
+        console.warn('[bustFunnelCache]', e?.message ?? e),
+      )
       logAudit(`funnel.${input.status === 'live' ? 'publish' : input.status}`, 'funnel', input.id, {
         slug: input.slug,
         status: input.status,
@@ -212,7 +216,7 @@ export function useCreateStep() {
         config: input.config,
       })
       if (error) throw error
-      await bustFunnelCache(input.funnel_slug)
+      bustFunnelCache(input.funnel_slug).catch((e) => console.warn('[bustFunnelCache]', e?.message ?? e))
       logAudit('funnel_step.create', 'funnel', input.funnel_id, {
         step_key: input.step_key,
         step_type: input.step_type,
@@ -238,7 +242,7 @@ export function useUpdateStep() {
         .update(input.patch)
         .eq('id', input.id)
       if (error) throw error
-      await bustFunnelCache(input.funnel_slug)
+      bustFunnelCache(input.funnel_slug).catch((e) => console.warn('[bustFunnelCache]', e?.message ?? e))
       logAudit('funnel_step.update', 'funnel_step', input.id, {
         fields: Object.keys(input.patch),
       })
@@ -259,7 +263,7 @@ export function useDeleteStep() {
     }) => {
       const { error } = await supabase.from('funnel_steps').delete().eq('id', input.id)
       if (error) throw error
-      await bustFunnelCache(input.funnel_slug)
+      bustFunnelCache(input.funnel_slug).catch((e) => console.warn('[bustFunnelCache]', e?.message ?? e))
       logAudit('funnel_step.delete', 'funnel_step', input.id)
     },
     onSuccess: (_data, vars) => {
@@ -286,7 +290,7 @@ export function useReorderSteps() {
         p_step_ids: input.step_ids,
       })
       if (error) throw error
-      await bustFunnelCache(input.funnel_slug)
+      bustFunnelCache(input.funnel_slug).catch((e) => console.warn('[bustFunnelCache]', e?.message ?? e))
       logAudit('funnel_step.reorder', 'funnel', input.funnel_id, {
         order: input.step_ids,
       })
