@@ -7,50 +7,20 @@
       "description": "Gender and general-purpose portraits."
     },
     {
-      "id": "wellness",
-      "label": "Wellness",
-      "description": "Mood, mindfulness, calm scenes."
-    },
-    {
-      "id": "relationships",
-      "label": "Relationships",
-      "description": "Couples, attachment styles, connection."
-    },
-    {
-      "id": "lifestyle",
-      "label": "Lifestyle",
-      "description": "Everyday people, candid portraits."
-    },
-    {
-      "id": "social-proof",
-      "label": "Social proof",
-      "description": "Group shots, testimonial-style imagery, world-map pins."
-    },
-    {
-      "id": "icons",
-      "label": "Icons",
-      "description": "Single-symbol illustrations and small graphics."
+      "id": "lovify-avatar",
+      "label": "Lovify Avatar",
+      "description": "Lovify branded character avatars."
     }
   ],
   "assets": [
-    { "key": "general/man.svg",    "category": "general", "label": "Man",   "alt": "Male portrait" },
-    { "key": "general/woman.svg",  "category": "general", "label": "Woman", "alt": "Female portrait" },
-    { "key": "general/other.jpg",  "category": "general", "label": "Other", "alt": "Other gender" },
-    { "key": "relationships/portrait-male.svg",        "category": "relationships", "label": "Male portrait",          "alt": "Male portrait" },
-    { "key": "relationships/portrait-female.svg",      "category": "relationships", "label": "Female portrait",        "alt": "Female portrait" },
-    { "key": "relationships/couple-secure.svg",        "category": "relationships", "label": "Couple — Secure",        "alt": "Calm couple" },
-    { "key": "relationships/couple-preoccupied.svg",   "category": "relationships", "label": "Couple — Preoccupied",   "alt": "One reaches, one distant" },
-    { "key": "relationships/couple-avoidant.svg",      "category": "relationships", "label": "Couple — Avoidant",      "alt": "Couple back to back" },
-    { "key": "relationships/couple-disorganized.svg",  "category": "relationships", "label": "Couple — Disorganized",  "alt": "Tense couple" },
-    { "key": "wellness/solo-male-window.svg",          "category": "wellness",      "label": "Pensive man by window",  "alt": "Pensive man" },
-    { "key": "wellness/solo-female-calm.svg",          "category": "wellness",      "label": "Calm female portrait",   "alt": "Calm female" },
-    { "key": "wellness/meditation.svg",                "category": "wellness",      "label": "Meditation",             "alt": "Seated meditation" },
-    { "key": "social-proof/world-map.svg",             "category": "social-proof",  "label": "World map with pins",    "alt": "World map" },
-    { "key": "social-proof/group-shot.svg",            "category": "social-proof",  "label": "Group of people",        "alt": "Four people" },
-    { "key": "lifestyle/portrait-1.svg",               "category": "lifestyle",     "label": "Portrait 1",             "alt": "Portrait" },
-    { "key": "lifestyle/portrait-2.svg",               "category": "lifestyle",     "label": "Portrait 2",             "alt": "Portrait" },
-    { "key": "icons/heart.svg",                        "category": "icons",         "label": "Heart",                  "alt": "Heart" },
-    { "key": "icons/heart-broken.svg",                 "category": "icons",         "label": "Broken heart",           "alt": "Broken heart" },
-    { "key": "icons/spark.svg",                        "category": "icons",         "label": "Spark",                  "alt": "Spark" }
+    { "key": "general/man.svg",     "category": "general", "label": "Man",       "alt": "Male portrait" },
+    { "key": "general/woman.svg",   "category": "general", "label": "Woman",     "alt": "Female portrait" },
+    { "key": "general/woman-2.svg", "category": "general", "label": "Woman 2",   "alt": "Female portrait 2" },
+    { "key": "general/other.jpg",   "category": "general", "label": "Other",     "alt": "Other gender" },
+    { "key": "lovify-avatar/lovify-cool.png",   "category": "lovify-avatar", "label": "Lovify Cool",   "alt": "Lovify cool avatar" },
+    { "key": "lovify-avatar/lovify-study.png",  "category": "lovify-avatar", "label": "Lovify Study",  "alt": "Lovify study avatar" },
+    { "key": "lovify-avatar/lovify-music.png",  "category": "lovify-avatar", "label": "Lovify Music",  "alt": "Lovify music avatar" },
+    { "key": "lovify-avatar/lovify-dj.png",     "category": "lovify-avatar", "label": "Lovify DJ",     "alt": "Lovify DJ avatar" },
+    { "key": "lovify-avatar/lovify-globe.png",  "category": "lovify-avatar", "label": "Lovify Globe",  "alt": "Lovify globe avatar" }
   ]
 }
