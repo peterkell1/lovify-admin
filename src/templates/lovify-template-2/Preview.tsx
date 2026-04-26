@@ -2,7 +2,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 import { ArrowLeft, Check, ChevronRight, ImageOff, Lock, X } from 'lucide-react'
 import type { PlanOption } from '@/types/funnels'
 import type { PreviewProps } from '@/templates/types'
-import { resolveAdminAssetUrl, resolveAdminImageUrl } from '@/lib/asset-manifest'
+import { resolveAdminImageUrl } from '@/lib/asset-manifest'
 import './theme.css'
 
 // Read-only mirror of lovify-funnel/src/templates/lovify-template-2.
@@ -25,8 +25,6 @@ export function Preview({
   funnelDefaults,
   viewport = 'desktop',
 }: PreviewProps) {
-  const brand = funnelName || 'Lovify'
-
   return (
     <div className="lt2-root w-full min-h-full rounded-2xl overflow-hidden border border-[var(--lt2-border)] shadow-sm flex flex-col">
       {/* Header — matches Layout.tsx exactly: back arrow | brand | spacer, no hamburger */}
@@ -46,7 +44,7 @@ export function Preview({
               className="lt2-headline select-none truncate"
               style={{ fontSize: 16, letterSpacing: '-0.03em', lineHeight: 1 }}
             >
-              Lovify
+              {funnelName || 'Lovify'}
             </span>
           </div>
           {/* Mirror-width spacer keeps wordmark centered — no hamburger */}
