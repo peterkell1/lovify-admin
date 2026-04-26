@@ -98,36 +98,86 @@ export function TemplateCard({
           : 'border-border hover:border-foreground/20 hover:shadow-md',
       )}
     >
-      {/* Mini-preview frame. The live Preview renders at its natural
-          size in an absolutely-positioned wrapper; we measure the
-          card's thumbnail box and apply a CSS transform scale so the
-          scaled element fits without overflowing. The pointer-events
-          block keeps inner buttons / inputs from stealing focus. */}
+      {/* Thumbnail area — soft gradient background, phone mockup centered */}
       <div
         ref={thumbRef}
-        className="relative bg-background/60 border-b border-border h-[280px] overflow-hidden"
+        className="relative border-b border-border h-[280px] overflow-hidden flex items-center justify-center"
+        style={{ background: 'linear-gradient(160deg, hsl(38 60% 94%) 0%, hsl(24 20% 88%) 100%)' }}
       >
         {Preview && sample && scale > 0 ? (
+          /* Outer clipping box — matches the scaled phone dimensions exactly */
           <div
-            className="absolute top-1/2 left-1/2 pointer-events-none"
+            className="pointer-events-none relative shrink-0"
             style={{
-              width: `${PREVIEW_INTRINSIC_WIDTH}px`,
-              height: `${PREVIEW_INTRINSIC_HEIGHT}px`,
-              transform: `translate(-50%, -50%) scale(${scale})`,
-              transformOrigin: 'center center',
+              width: PREVIEW_INTRINSIC_WIDTH * scale,
+              height: PREVIEW_INTRINSIC_HEIGHT * scale,
             }}
           >
-            <Preview
-              stepType={sample.stepType}
-              config={sample.config}
-              stepKey={sample.stepKey ?? sample.stepType}
-              funnelName={funnelName ?? manifest.name}
-              funnelDefaults={{ ...EMPTY_DEFAULTS, ...(sample.funnelDefaults ?? {}) }}
-            />
+            {/* Phone frame + content scaled together as one unit from top-left */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: PREVIEW_INTRINSIC_WIDTH,
+                height: PREVIEW_INTRINSIC_HEIGHT,
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+              }}
+            >
+              {/* Bezel */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: 36,
+                  border: '1.5px solid rgba(0,0,0,0.10)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.07)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  background: '#fff',
+                }}
+              >
+                {/* Status bar */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', height: 28, background: 'rgba(255,250,242,0.98)', flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#333' }}>9:41</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <svg width="14" height="10" viewBox="0 0 12 8" fill="#333">
+                      <rect x="0" y="5" width="2" height="3" rx="0.5" />
+                      <rect x="3" y="3" width="2" height="5" rx="0.5" />
+                      <rect x="6" y="1" width="2" height="7" rx="0.5" />
+                      <rect x="9" y="0" width="2" height="8" rx="0.5" opacity="0.3" />
+                    </svg>
+                    <svg width="16" height="10" viewBox="0 0 14 8" fill="none">
+                      <rect x="0.5" y="0.5" width="11" height="7" rx="1.5" stroke="#333" strokeWidth="1" />
+                      <rect x="1.5" y="1.5" width="8" height="5" rx="0.5" fill="#333" />
+                      <path d="M12.5 2.5v3c.8-.3.8-2.7 0-3z" fill="#333" opacity="0.5" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Preview content */}
+                <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+                  <Preview
+                    stepType={sample.stepType}
+                    config={sample.config}
+                    stepKey={sample.stepKey ?? sample.stepType}
+                    funnelName={funnelName ?? 'Lovify'}
+                    funnelDefaults={{ ...EMPTY_DEFAULTS, ...(sample.funnelDefaults ?? {}) }}
+                  />
+                </div>
+
+                {/* Home indicator */}
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0', background: 'rgba(255,250,242,0.98)', flexShrink: 0 }}>
+                  <div style={{ width: 56, height: 5, borderRadius: 3, background: '#000', opacity: 0.15 }} />
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-            {inView ? 'Loading preview…' : ''}
+          <div className="text-xs text-muted-foreground">
+            {inView ? 'Loading…' : ''}
           </div>
         )}
       </div>

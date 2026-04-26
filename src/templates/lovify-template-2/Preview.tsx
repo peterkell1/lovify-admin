@@ -46,7 +46,7 @@ export function Preview({
               className="lt2-headline select-none truncate"
               style={{ fontSize: 16, letterSpacing: '-0.03em', lineHeight: 1 }}
             >
-              {brand}
+              Lovify
             </span>
           </div>
           {/* Mirror-width spacer keeps wordmark centered — no hamburger */}
@@ -194,14 +194,15 @@ function WelcomePreview({ config }: { config: Cfg }) {
   return (
     <>
       <div className="flex flex-col items-center text-center gap-6 py-4">
-        {heroImage ? (
-          <img src={heroImage} alt="" className="rounded-2xl w-full max-w-md max-h-[320px] object-cover" />
-        ) : config.hero_emoji ? (
+        {config.hero_emoji && !heroImage ? (
           <div className="text-6xl">{config.hero_emoji as string}</div>
         ) : null}
         <h1 className="lt2-headline text-3xl max-w-xl">{(config.title as string) || 'Welcome'}</h1>
         {config.subtitle ? (
           <p className="text-[var(--lt2-muted)] text-sm max-w-md">{config.subtitle as string}</p>
+        ) : null}
+        {heroImage ? (
+          <img src={heroImage} alt="" className="rounded-2xl w-full max-w-md max-h-[320px] object-cover" />
         ) : null}
       </div>
       <CtaBlock>{(config.cta_label as string) || 'Continue'}</CtaBlock>
@@ -221,12 +222,16 @@ function EmailPreview({ config }: { config: Cfg }) {
           <div className="w-full h-14 rounded-xl border border-[var(--lt2-border)] bg-white px-5 flex items-center text-base text-[var(--lt2-muted)]">
             you@example.com
           </div>
-          <p className="mt-3 flex items-center gap-2 text-xs text-[var(--lt2-muted)] leading-relaxed">
-            <Lock className="h-3.5 w-3.5 flex-shrink-0" />
-            <span>
-              {(config.consent_copy as string) || 'We respect your privacy and process your data per our Privacy Policy.'}
-            </span>
-          </p>
+          {(config.terms_url as string) || (config.privacy_url as string) ? (
+            <p className="mt-3 flex items-start gap-2 text-xs text-(--lt2-muted) leading-relaxed">
+              <Lock className="h-3.5 w-3.5 shrink-0 mt-px" />
+              {(config.terms_url as string) && (config.privacy_url as string)
+                ? <span>By continuing you agree to our <span className="underline">Terms</span> and <span className="underline">Privacy Policy</span>.</span>
+                : (config.terms_url as string)
+                ? <span>By continuing you agree to our <span className="underline">Terms of Service</span>.</span>
+                : <span>We respect your privacy and process your data per our <span className="underline">Privacy Policy</span>.</span>}
+            </p>
+          ) : null}
         </div>
       </div>
       <CtaBlock>{(config.cta_label as string) || 'Continue'}</CtaBlock>
@@ -319,17 +324,13 @@ function NarrativePreview({ config }: { config: Cfg }) {
     <>
       <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full pt-2 md:pt-8">
         {config.hero_emoji ? <div className="text-3xl">{config.hero_emoji as string}</div> : null}
-        <div className="flex flex-col md:flex-row gap-6 md:gap-10 md:items-start">
-          <div className="flex-1 min-w-0">
-            <h1 className="lt2-headline text-2xl md:text-4xl">{(config.title as string) || 'Title'}</h1>
-            {config.subtitle ? (
-              <p className="mt-3 text-[var(--lt2-muted)] text-base md:text-lg leading-relaxed">{config.subtitle as string}</p>
-            ) : null}
-          </div>
-          {imageUrl ? (
-            <img src={imageUrl} alt="" className="w-full md:w-[320px] md:h-[320px] object-cover rounded-2xl flex-shrink-0" />
-          ) : null}
-        </div>
+        <h1 className="lt2-headline text-2xl md:text-4xl">{(config.title as string) || 'Title'}</h1>
+        {config.subtitle ? (
+          <p className="mt-3 text-[var(--lt2-muted)] text-base md:text-lg leading-relaxed">{config.subtitle as string}</p>
+        ) : null}
+        {imageUrl ? (
+          <img src={imageUrl} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 280 }} />
+        ) : null}
         {bullets.length > 0 ? (
           <div className="lt2-card p-5 md:p-6">
             <ul className="flex flex-col gap-3">
@@ -578,7 +579,6 @@ function GenrePickerPreview({ config }: { config: Cfg }) {
 function PaywallPreview({
   config,
   funnelDefaults,
-  viewport,
 }: {
   config: Cfg
   funnelDefaults: PreviewProps['funnelDefaults']
@@ -587,61 +587,42 @@ function PaywallPreview({
   const enabledPlans: PlanOption[] = funnelDefaults.planOptions ?? []
   const popularKey = funnelDefaults.mostPopularPlanKey ?? funnelDefaults.defaultPlanKey ?? null
   const selectedKey = funnelDefaults.defaultPlanKey ?? enabledPlans[0]?.planKey ?? null
-  const isDesktop = viewport === 'desktop'
+  const hasTrial = enabledPlans.some((p) => p.trialDays && p.trialDays > 0)
 
   return (
     <>
-      <div className="text-center pt-4 md:pt-8">
-        <h1 className={'lt2-headline max-w-2xl mx-auto ' + (isDesktop ? 'text-4xl' : 'text-3xl')}>
+      <div className="text-center pt-2">
+        <h1 className="lt2-headline text-3xl max-w-2xl mx-auto leading-tight">
           {(config.title as string) || 'Pick a plan'}
         </h1>
         {config.subtitle ? (
-          <p className="mt-3 text-[var(--lt2-muted)] max-w-xl mx-auto">{config.subtitle as string}</p>
+          <p className="mt-2 text-[var(--lt2-muted)] text-sm max-w-xl mx-auto">{config.subtitle as string}</p>
         ) : null}
       </div>
 
       {enabledPlans.length === 0 ? (
-        <div className="mt-8 lt2-card p-6 text-center text-sm text-[var(--lt2-muted)]">
-          No plans enabled yet. Toggle some on the Plans tab.
-        </div>
-      ) : isDesktop ? (
-        <div className="mt-10 grid grid-cols-3 gap-5 max-w-4xl mx-auto w-full">
-          {enabledPlans.map((p) => {
-            const isSelected = p.planKey === selectedKey
-            const isPopular = p.planKey === popularKey
-            return (
-              <div key={p.planKey} className={'relative text-left rounded-2xl border bg-[var(--lt2-card)] p-6 flex flex-col gap-3 ' + (isSelected ? 'border-[var(--lt2-fg)] shadow-[0_0_0_1px_var(--lt2-fg)]' : 'border-[var(--lt2-border)]')}>
-                {isPopular ? (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--lt2-cta-bg)] text-[var(--lt2-cta-fg)] text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded-full whitespace-nowrap">
-                    Most popular
-                  </span>
-                ) : null}
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="lt2-headline text-xl leading-tight">{p.label}</h3>
-                  <span className="lt2-radio mt-1 shrink-0" data-checked={isSelected}>
-                    {isSelected ? <span className="block h-2.5 w-2.5 rounded-full bg-[var(--lt2-bg)]" /> : null}
-                  </span>
-                </div>
-                <div>
-                  <div className="lt2-headline text-3xl">${(p.amountCents / 100).toFixed(2)}</div>
-                  <div className="text-xs text-[var(--lt2-muted)]">
-                    {p.trialDays && p.trialDays > 0
-                      ? `${p.trialDays}-day free trial, then $${(p.amountCents / 100).toFixed(2)}/${p.interval ?? 'year'}`
-                      : `Per ${p.interval ?? 'year'}`}
-                  </div>
-                </div>
-                {p.credits ? <div className="text-xs text-[var(--lt2-muted)]">{p.credits.toLocaleString()} credits</div> : null}
-              </div>
-            )
-          })}
+        <div className="mt-6 lt2-card p-6 text-center text-sm text-[var(--lt2-muted)]">
+          No plans enabled yet — toggle some on the Plans tab.
         </div>
       ) : (
-        <div className="mt-8 flex flex-col gap-3 max-w-2xl mx-auto w-full">
+        <div className="mt-6 flex flex-col gap-3 w-full">
           {enabledPlans.map((p) => {
             const isSelected = p.planKey === selectedKey
             const isPopular = p.planKey === popularKey
+            const priceStr = `$${(p.amountCents / 100).toFixed(2)}`
+            const periodStr = p.trialDays && p.trialDays > 0
+              ? `then /${p.interval ?? 'year'}`
+              : `per ${p.interval ?? 'year'}`
             return (
-              <div key={p.planKey} className={'relative text-left rounded-2xl border bg-[var(--lt2-card)] px-4 py-4 flex items-center justify-between gap-4 ' + (isSelected ? 'border-[var(--lt2-fg)] shadow-[0_0_0_1px_var(--lt2-fg)]' : 'border-[var(--lt2-border)]')}>
+              <div
+                key={p.planKey}
+                className={
+                  'relative text-left rounded-2xl border bg-[var(--lt2-card)] px-4 py-4 flex items-center justify-between gap-4 ' +
+                  (isSelected
+                    ? 'border-[var(--lt2-fg)] shadow-[0_0_0_1px_var(--lt2-fg)]'
+                    : 'border-[var(--lt2-border)]')
+                }
+              >
                 {isPopular ? (
                   <span className="absolute -top-3 left-4 bg-[var(--lt2-cta-bg)] text-[var(--lt2-cta-fg)] text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full whitespace-nowrap">
                     Most popular
@@ -652,15 +633,15 @@ function PaywallPreview({
                     {isSelected ? <span className="block h-2.5 w-2.5 rounded-full bg-[var(--lt2-bg)]" /> : null}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <h3 className="lt2-headline text-base leading-tight">{p.label}</h3>
-                    {p.credits ? <div className="text-xs text-[var(--lt2-muted)] mt-0.5">{p.credits.toLocaleString()} credits</div> : null}
+                    <div className="lt2-headline text-sm leading-tight">{p.label}</div>
+                    {p.credits ? (
+                      <div className="text-xs text-[var(--lt2-muted)] mt-0.5">{p.credits.toLocaleString()} credits</div>
+                    ) : null}
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="lt2-headline text-xl">${(p.amountCents / 100).toFixed(2)}</div>
-                  <div className="text-[10px] text-[var(--lt2-muted)]">
-                    {p.trialDays && p.trialDays > 0 ? `then /${p.interval ?? 'year'}` : `per ${p.interval ?? 'year'}`}
-                  </div>
+                  <div className="lt2-headline text-lg">{priceStr}</div>
+                  <div className="text-[10px] text-[var(--lt2-muted)]">{periodStr}</div>
                 </div>
               </div>
             )
@@ -669,17 +650,17 @@ function PaywallPreview({
       )}
 
       {(config.features as string[] | undefined)?.length ? (
-        <ul className="mt-8 max-w-2xl mx-auto w-full flex flex-col gap-2 text-sm md:text-base">
+        <ul className="mt-5 flex flex-col gap-2 text-sm w-full">
           {(config.features as string[]).map((f, i) => (
             <li key={i} className="flex items-start gap-2.5">
-              <Check className="h-4 w-4 mt-1 text-[var(--lt2-accent)] flex-shrink-0" />
+              <Check className="h-4 w-4 mt-0.5 text-[var(--lt2-accent)] flex-shrink-0" />
               <span>{f}</span>
             </li>
           ))}
         </ul>
       ) : null}
 
-      <CtaBlock>Start my free trial</CtaBlock>
+      <CtaBlock>{hasTrial ? 'Start my free trial' : 'Continue to payment'}</CtaBlock>
       {config.guarantee_copy ? (
         <p className="-mt-2 text-center text-xs text-[var(--lt2-muted)]">{config.guarantee_copy as string}</p>
       ) : null}

@@ -121,50 +121,60 @@ export function TemplatePreviewDialog({
           ) : null}
         </div>
       </DialogHeader>
-      <DialogContent className="p-0">
-        <div className="grid grid-rows-[1fr_auto]">
-          <div className="px-6 pt-6 pb-4 flex items-start justify-center bg-background/60 min-h-[560px]">
-            <div
-              data-preview-viewport={viewport}
-              className={cn(
-                'preview-viewport transition-[max-width] duration-300 ease-out flex items-start justify-center w-full',
-                viewport === 'desktop' ? 'max-w-5xl' : 'max-w-sm',
-              )}
-            >
-              {Preview ? (
+      <DialogContent className="p-0 overflow-hidden">
+        <div className="flex flex-col">
+          {/* Preview area */}
+          <div
+            className="flex items-center justify-center px-8 py-8"
+            style={{
+              background: 'linear-gradient(160deg, hsl(38 60% 93%) 0%, hsl(24 18% 86%) 100%)',
+              minHeight: 560,
+            }}
+          >
+            {Preview ? (
+              <div
+                className={cn(
+                  'w-full transition-[max-width] duration-300 ease-out flex flex-col',
+                  viewport === 'mobile' ? 'max-w-[360px]' : 'max-w-2xl',
+                )}
+                style={{ height: 520, overflow: 'hidden' }}
+              >
                 <Preview
                   stepType={sample.stepType}
                   config={sample.config}
                   stepKey={sample.stepKey ?? sample.stepType}
-                  funnelName={funnelName ?? 'Your funnel'}
+                  funnelName={funnelName ?? 'Lovify'}
                   funnelDefaults={{ ...EMPTY_DEFAULTS, ...(sample.funnelDefaults ?? {}) }}
                   viewport={viewport}
                 />
-              ) : (
-                <div className="text-sm text-muted-foreground py-16">Loading template…</div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">Loading template…</div>
+            )}
           </div>
-          <div className="border-t border-border px-6 py-3 flex items-center justify-between gap-3">
+
+          {/* Nav bar */}
+          <div className="border-t border-border px-6 py-3 flex items-center justify-between gap-3 bg-card">
             <Button
               variant="outline"
               size="sm"
               onClick={goPrev}
               disabled={index === 0 || !template}
+              className="w-20"
             >
               <ChevronLeft className="h-4 w-4" /> Prev
             </Button>
-            <div className="text-xs font-mono text-muted-foreground">
+            <div className="text-xs font-semibold text-foreground">
               {sample.label ?? sample.stepType}
-              <span className="ml-2 text-tertiary">
+              <span className="ml-2 font-normal text-muted-foreground">
                 {Math.min(index + 1, samples.length)} / {samples.length}
               </span>
             </div>
             <Button
-              variant="outline"
               size="sm"
               onClick={goNext}
               disabled={index >= samples.length - 1 || !template}
+              className="w-20"
             >
               Next <ChevronRight className="h-4 w-4" />
             </Button>

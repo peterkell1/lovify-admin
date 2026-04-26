@@ -20,6 +20,7 @@ import {
 export type StepEditorFunnelDefaults = {
   planOptions: PlanOption[]
   defaultPlanKey: string | null
+  mostPopularPlanKey?: string | null
   defaultInterval: Funnel['default_interval']
 }
 
@@ -278,13 +279,13 @@ export function StepEditor({
             </Field>
 
             {isDuplicate ? (
-              <p className="-mt-2 text-xs text-destructive">
-                This step is already on the funnel. Edit it from the list instead.
+              <p className="-mt-2 text-xs rounded-lg bg-amber-50 border border-amber-200 text-amber-700 px-3 py-2">
+                Already added — select a different step, or close this dialog and edit it from the list.
               </p>
             ) : null}
 
             <div className="border-t border-border pt-4 space-y-3">
-              <FormComponent value={config} onChange={setConfig} />
+              <FormComponent value={config} onChange={setConfig} stepKey={preset.fixedKey ?? initial?.step_key} />
             </div>
 
             <div className="flex gap-2 border-t border-border pt-4">

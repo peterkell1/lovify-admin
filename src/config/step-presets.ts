@@ -198,9 +198,10 @@ export const STEP_PRESETS: StepPreset[] = [
   {
     id: 'welcome',
     label: 'Welcome screen',
-    description: 'Character + headline + CTA. Key auto-generated.',
+    description: 'Character + headline + CTA. Only one per funnel.',
     group: 'content',
     stepType: 'welcome',
+    fixedKey: 'welcome',
   },
   {
     id: 'narrative',

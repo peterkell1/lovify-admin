@@ -1,4 +1,5 @@
 import { useEffect, type ReactElement } from 'react'
+import { Image } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import type { QuizOption, StepType } from '@/types/funnels'
@@ -11,6 +12,7 @@ type Config = Record<string, unknown>
 type FormProps = {
   value: Config
   onChange: (next: Config) => void
+  stepKey?: string
 }
 
 // Every form is a controlled component. The parent (StepEditor) holds the
@@ -47,11 +49,18 @@ function EmailCaptureForm({ value, onChange }: FormProps) {
           placeholder="Continue"
         />
       </Field>
-      <Field label="Consent copy (optional)">
+      <Field label="Terms of Service URL (optional)">
         <Input
-          value={(value.consent_copy as string) ?? ''}
-          onChange={(e) => onChange({ ...value, consent_copy: e.target.value })}
-          placeholder="By continuing you agree to our Terms."
+          value={(value.terms_url as string) ?? ''}
+          onChange={(e) => onChange({ ...value, terms_url: e.target.value })}
+          placeholder="https://example.com/terms"
+        />
+      </Field>
+      <Field label="Privacy Policy URL (optional)">
+        <Input
+          value={(value.privacy_url as string) ?? ''}
+          onChange={(e) => onChange({ ...value, privacy_url: e.target.value })}
+          placeholder="https://example.com/privacy"
         />
       </Field>
     </>
@@ -71,13 +80,6 @@ function WelcomeForm({ value, onChange }: FormProps) {
         <Input
           value={(value.subtitle as string) ?? ''}
           onChange={(e) => onChange({ ...value, subtitle: e.target.value })}
-        />
-      </Field>
-      <Field label="Body">
-        <textarea
-          value={(value.body_md as string) ?? ''}
-          onChange={(e) => onChange({ ...value, body_md: e.target.value })}
-          className="min-h-[80px] w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm"
         />
       </Field>
       <Field label="Hero emoji">
@@ -206,13 +208,6 @@ function NarrativeForm({ value, onChange }: FormProps) {
           </button>
         </div>
       </Field>
-      <Field label="Footer note (optional)">
-        <Input
-          value={(value.footer_note as string) ?? ''}
-          onChange={(e) => onChange({ ...value, footer_note: e.target.value })}
-          placeholder="We won't share your data with third parties"
-        />
-      </Field>
       <Field label="CTA label">
         <Input
           value={(value.cta_label as string) ?? ''}
@@ -224,7 +219,7 @@ function NarrativeForm({ value, onChange }: FormProps) {
   )
 }
 
-function QuizSingleForm({ value, onChange }: FormProps) {
+function QuizSingleForm({ value, onChange, stepKey }: FormProps) {
   // Drive options directly from `value` — a local useState would
   // initialize once on mount and then leak stale options into the
   // parent when the dialog is reopened for a different preset.
@@ -251,15 +246,17 @@ function QuizSingleForm({ value, onChange }: FormProps) {
           onChange={(e) => onChange({ ...value, subtitle: e.target.value })}
         />
       </Field>
-      <Field label="Layout">
-        <Select
-          value={(value.layout as string) ?? 'vertical'}
-          onChange={(e) => onChange({ ...value, layout: e.target.value })}
-        >
-          <option value="vertical">Vertical</option>
-          <option value="horizontal">Horizontal</option>
-        </Select>
-      </Field>
+      {stepKey !== 'gender' ? null : (
+        <Field label="Layout">
+          <Select
+            value={(value.layout as string) ?? 'vertical'}
+            onChange={(e) => onChange({ ...value, layout: e.target.value })}
+          >
+            <option value="vertical">Vertical</option>
+            <option value="horizontal">Horizontal</option>
+          </Select>
+        </Field>
+      )}
       <Field label="Required">
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -270,8 +267,13 @@ function QuizSingleForm({ value, onChange }: FormProps) {
           Must answer to continue
         </label>
       </Field>
-      <Field label="Options" hint="Click the 🖼 icon on each option to pick an image from the asset library (required for image-card layout on horizontal 2–3 option steps).">
-        <OptionList options={options} setOptions={setOptions} withImage />
+      <Field label="Options" hint={stepKey === 'gender' ? <>Click the <Image className="inline h-3.5 w-3.5 align-text-bottom" /> icon on each option to pick an image from the asset library.</> : undefined}>
+        <OptionList
+          options={options}
+          setOptions={setOptions}
+          withEmoji={String(value.layout ?? '') !== 'horizontal'}
+          withImage={stepKey === 'gender'}
+        />
       </Field>
     </>
   )

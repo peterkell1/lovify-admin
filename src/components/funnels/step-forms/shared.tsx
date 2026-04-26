@@ -7,7 +7,7 @@ import { EmojiInput } from '../EmojiInput'
 import { AssetPicker } from '../AssetPicker'
 import { resolveAdminAssetUrl } from '@/lib/asset-manifest'
 
-export function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+export function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: React.ReactNode }) {
   return (
     <label className="block space-y-1">
       <span className="text-xs font-semibold text-foreground">{label}</span>
@@ -28,6 +28,10 @@ export function OptionList({
   withEmoji?: boolean
   withImage?: boolean
 }) {
+  // Auto-suppress emoji column when any option already has an image assigned —
+  // image-card steps use photos for visual identity, emojis are redundant.
+  const hasImages = withImage && options.some((o) => o.image_asset_key || o.character_image_url)
+  const showEmoji = withEmoji && !hasImages
   const [expandedImg, setExpandedImg] = useState<number | null>(null)
   const [pickerOpen, setPickerOpen] = useState<number | null>(null)
 
@@ -49,9 +53,9 @@ export function OptionList({
           ? resolveAdminAssetUrl(opt.image_asset_key)
           : opt.character_image_url ?? null
         return (
-          <div key={i} className="rounded-lg border border-border bg-card overflow-hidden">
+          <div key={i} className="rounded-lg border border-border bg-card">
             <div className="flex items-center gap-2 p-2">
-              {withEmoji ? (
+              {showEmoji ? (
                 <EmojiInput
                   value={opt.emoji ?? ''}
                   onChange={(next) => update(i, { emoji: next })}

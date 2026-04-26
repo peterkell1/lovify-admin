@@ -181,7 +181,8 @@ export function useDeleteFunnel() {
     mutationFn: async (input: { id: string; slug: string }) => {
       const { error } = await supabase.from('funnels').delete().eq('id', input.id)
       if (error) throw error
-      await bustFunnelCache(input.slug)
+      // No cache bust needed — the funnel no longer exists so the Next.js
+      // app will return 404 on next load regardless of cached data.
       logAudit('funnel.delete', 'funnel', input.id, { slug: input.slug })
     },
     onSuccess: () => {

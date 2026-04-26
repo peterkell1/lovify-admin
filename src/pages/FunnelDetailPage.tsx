@@ -65,9 +65,13 @@ export default function FunnelDetailPage() {
   }
 
   const handleDelete = async () => {
-    await del.mutateAsync({ id: funnel.id, slug: funnel.slug })
-    toast.success('Funnel deleted')
-    navigate('/funnels')
+    try {
+      await del.mutateAsync({ id: funnel.id, slug: funnel.slug })
+      toast.success('Funnel deleted')
+      navigate('/funnels')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete funnel')
+    }
   }
 
   const handlePickTemplate = (m: AdminTemplateManifest) => {

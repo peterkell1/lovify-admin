@@ -24,6 +24,8 @@ import type { Funnel, FunnelStep, PlanOption } from '@/types/funnels'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
 import { getAdminTemplateManifest, DEFAULT_TEMPLATE_ID } from '@/templates/registry'
+import { ChangeTemplateDialog } from '@/components/funnels/ChangeTemplateDialog'
+import type { AdminTemplateManifest } from '@/templates/types'
 
 type Props = { mode: 'create' | 'edit' }
 
@@ -243,6 +245,30 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
   const updateStep = useUpdateStep()
   const deleteStep = useDeleteStep()
   const reorder = useReorderSteps()
+
+  const [changeTemplateOpen, setChangeTemplateOpen] = useState(false)
+  const [pendingTemplate, setPendingTemplate] = useState<AdminTemplateManifest | null>(null)
+
+  const handlePickTemplate = (m: AdminTemplateManifest) => {
+    setChangeTemplateOpen(false)
+    setPendingTemplate(m)
+  }
+
+  const handleConfirmTemplate = async () => {
+    if (!pendingTemplate) return
+    try {
+      await updateFunnel.mutateAsync({
+        id: funnel.id,
+        slug: funnel.slug,
+        patch: { template: pendingTemplate.id },
+      })
+      toast.success(`Switched to ${pendingTemplate.name}`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to change template')
+    } finally {
+      setPendingTemplate(null)
+    }
+  }
 
   const [stepDialog, setStepDialog] = useState<
     | { mode: 'create' }
@@ -490,6 +516,24 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
                   className="font-mono"
                 />
               </Field>
+              <Field label="Template" hint="Step content and plans carry over — only the visual style changes.">
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary px-3 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Badge variant="outline">{getAdminTemplateManifest(funnel.template).name}</Badge>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {getAdminTemplateManifest(funnel.template).description}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setChangeTemplateOpen(true)}
+                    disabled={saving}
+                    className="text-xs font-semibold text-orange-600 hover:text-orange-700 whitespace-nowrap shrink-0"
+                  >
+                    Change
+                  </button>
+                </div>
+              </Field>
             </CardContent>
           </Card>
 
@@ -513,7 +557,7 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
         funnelDefaults={{
           planOptions,
           defaultPlanKey,
-          mostPopularPlanKey,
+          mostPopularPlanKey: mostPopularPlanKey ?? null,
           defaultInterval,
         }}
         templateId={funnel.template}
@@ -528,6 +572,27 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
         confirmLabel="Delete"
         variant="destructive"
         loading={deleteStep.isPending}
+      />
+
+      <ChangeTemplateDialog
+        open={changeTemplateOpen}
+        onClose={() => setChangeTemplateOpen(false)}
+        currentTemplateId={funnel.template}
+        onSelect={handlePickTemplate}
+      />
+
+      <ConfirmDialog
+        open={!!pendingTemplate}
+        onClose={() => setPendingTemplate(null)}
+        title={`Switch to ${pendingTemplate?.name ?? ''}?`}
+        description={
+          funnel.status === 'live'
+            ? `This funnel is live. End users will see the new look on next visit (within ~60s). Step content and plans carry over.`
+            : `Step content and plans carry over — only the look changes.`
+        }
+        onConfirm={handleConfirmTemplate}
+        confirmLabel="Switch template"
+        loading={updateFunnel.isPending}
       />
     </div>
   )
