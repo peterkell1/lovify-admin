@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Smartphone, Monitor } from 'lucide-react'
-import { Dialog, DialogHeader, DialogTitle, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useAdminTemplate } from '@/templates/useAdminTemplate'
 import type { PreviewFunnelDefaults, TemplateSample } from '@/templates/types'
@@ -121,66 +121,61 @@ export function TemplatePreviewDialog({
           ) : null}
         </div>
       </DialogHeader>
-      <DialogContent className="p-0 overflow-hidden">
-        <div className="flex flex-col">
-          {/* Preview area */}
+      {/* Scrollable preview area */}
+      <div
+        className="overflow-y-auto flex items-center justify-center px-8 py-8"
+        style={{
+          background: 'linear-gradient(160deg, hsl(38 60% 93%) 0%, hsl(24 18% 86%) 100%)',
+        }}
+      >
+        {Preview ? (
           <div
-            className="flex items-center justify-center px-8 py-8"
-            style={{
-              background: 'linear-gradient(160deg, hsl(38 60% 93%) 0%, hsl(24 18% 86%) 100%)',
-              minHeight: 560,
-            }}
-          >
-            {Preview ? (
-              <div
-                className={cn(
-                  'w-full transition-[max-width] duration-300 ease-out flex flex-col',
-                  viewport === 'mobile' ? 'max-w-[360px]' : 'max-w-2xl',
-                )}
-                style={{ height: 520, overflow: 'hidden' }}
-              >
-                <Preview
-                  stepType={sample.stepType}
-                  config={sample.config}
-                  stepKey={sample.stepKey ?? sample.stepType}
-                  funnelName={funnelName ?? 'Lovify'}
-                  funnelDefaults={{ ...EMPTY_DEFAULTS, ...(sample.funnelDefaults ?? {}) }}
-                  viewport={viewport}
-                />
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">Loading template…</div>
+            className={cn(
+              'w-full transition-[max-width] duration-300 ease-out flex flex-col flex-shrink-0',
+              viewport === 'mobile' ? 'max-w-[360px]' : 'max-w-2xl',
             )}
+            style={{ height: 560 }}
+          >
+            <Preview
+              stepType={sample.stepType}
+              config={sample.config}
+              stepKey={sample.stepKey ?? sample.stepType}
+              funnelName={funnelName ?? 'Lovify'}
+              funnelDefaults={{ ...EMPTY_DEFAULTS, ...(sample.funnelDefaults ?? {}) }}
+              viewport={viewport}
+            />
           </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">Loading template…</div>
+        )}
+      </div>
 
-          {/* Nav bar */}
-          <div className="border-t border-border px-6 py-3 flex items-center justify-between gap-3 bg-card">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goPrev}
-              disabled={index === 0 || !template}
-              className="w-20"
-            >
-              <ChevronLeft className="h-4 w-4" /> Prev
-            </Button>
-            <div className="text-xs font-semibold text-foreground">
-              {sample.label ?? sample.stepType}
-              <span className="ml-2 font-normal text-muted-foreground">
-                {Math.min(index + 1, samples.length)} / {samples.length}
-              </span>
-            </div>
-            <Button
-              size="sm"
-              onClick={goNext}
-              disabled={index >= samples.length - 1 || !template}
-              className="w-20"
-            >
-              Next <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+      {/* Nav bar — always visible at the bottom, never scrolls */}
+      <div className="flex-shrink-0 border-t border-border px-6 py-3 flex items-center justify-between gap-3 bg-card rounded-b-2xl">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={goPrev}
+          disabled={index === 0 || !template}
+          className="w-20"
+        >
+          <ChevronLeft className="h-4 w-4" /> Prev
+        </Button>
+        <div className="text-xs font-semibold text-foreground">
+          {sample.label ?? sample.stepType}
+          <span className="ml-2 font-normal text-muted-foreground">
+            {Math.min(index + 1, samples.length)} / {samples.length}
+          </span>
         </div>
-      </DialogContent>
+        <Button
+          size="sm"
+          onClick={goNext}
+          disabled={index >= samples.length - 1 || !template}
+          className="w-20"
+        >
+          Next <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
     </Dialog>
   )
 }

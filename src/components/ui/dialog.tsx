@@ -43,7 +43,7 @@ export function Dialog({
       className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className={cn('bg-card rounded-2xl shadow-dreamy border border-border w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto', className)}>
+      <div className={cn('bg-card rounded-2xl shadow-dreamy border border-border w-full max-w-lg mx-4 max-h-[90vh] overflow-hidden flex flex-col', className)}>
         {children}
       </div>
     </div>
@@ -52,7 +52,7 @@ export function Dialog({
 
 export function DialogHeader({ children, onClose }: { children: ReactNode; onClose?: () => void }) {
   return (
-    <div className="flex items-center justify-between p-6 pb-0">
+    <div className="flex-shrink-0 flex items-center justify-between p-6 pb-0">
       <div className="space-y-1">{children}</div>
       {onClose && (
         <button onClick={onClose} className="text-tertiary hover:text-foreground cursor-pointer transition-colors">
@@ -68,5 +68,5 @@ export function DialogTitle({ children, className }: { children: ReactNode; clas
 }
 
 export function DialogContent({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn('p-6', className)}>{children}</div>
+  return <div className={cn('p-6 overflow-y-auto flex-1', className)}>{children}</div>
 }

@@ -14,11 +14,12 @@ export function PhoneFrame({
   return (
     <div
       className={cn(
-        'h-full min-h-[560px] w-full max-w-[360px] mx-auto rounded-3xl bg-gradient-warm flex flex-col relative overflow-hidden shadow-dreamy',
+        'w-full max-w-[360px] mx-auto rounded-3xl bg-gradient-warm flex flex-col relative shadow-dreamy',
         className,
       )}
+      style={{ height: 560 }}
     >
-      <div className="flex-1 flex flex-col w-full px-6 overflow-hidden">
+      <div className="flex-1 flex flex-col w-full px-6 overflow-y-auto no-scrollbar">
         {children}
       </div>
     </div>
