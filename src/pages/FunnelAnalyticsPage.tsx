@@ -185,13 +185,10 @@ export default function FunnelAnalyticsPage() {
                 <th className="text-right font-medium px-4 py-2">
                   % of sessions
                 </th>
-                <th className="text-right font-medium px-4 py-2">
-                  Drop vs prev
-                </th>
               </tr>
             </thead>
             <tbody>
-              {analytics.rows.map((r, i) => (
+              {analytics.rows.map((r) => (
                 <tr
                   key={r.step_key}
                   className="border-b border-border last:border-0"
@@ -206,22 +203,15 @@ export default function FunnelAnalyticsPage() {
                   <td className="px-4 py-3 text-right font-semibold text-foreground">
                     {formatNumber(r.reached)}
                   </td>
-                  <td className="px-4 py-3 text-right text-tertiary">
+                  <td className={cn(
+                    'px-4 py-3 text-right text-xs font-semibold',
+                    r.overall_rate >= 0.8
+                      ? 'text-success'
+                      : r.overall_rate >= 0.4
+                        ? 'text-warning'
+                        : 'text-destructive',
+                  )}>
                     {formatPct(r.overall_rate)}
-                  </td>
-                  <td
-                    className={cn(
-                      'px-4 py-3 text-right text-xs font-semibold',
-                      i === 0
-                        ? 'text-tertiary'
-                        : r.drop_off_from_prev > 0.2
-                          ? 'text-destructive'
-                          : r.drop_off_from_prev > 0.05
-                            ? 'text-warning'
-                            : 'text-success',
-                    )}
-                  >
-                    {i === 0 ? '—' : formatPct(r.drop_off_from_prev)}
                   </td>
                 </tr>
               ))}
