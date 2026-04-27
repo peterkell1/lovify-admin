@@ -123,7 +123,7 @@ export default function FunnelsPage() {
                       </a>
                     ) : null}
                     <Link
-                      to={`/funnels/${f.id}/edit`}
+                      to={`/funnels/${f.id}/edit?from=list`}
                       className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
                     >
                       Edit

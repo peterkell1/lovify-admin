@@ -382,6 +382,10 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
     setSearchParams(next, { replace: true })
   }
 
+  const cameFromList = searchParams.get('from') === 'list'
+  const backTo = cameFromList ? '/funnels' : `/funnels/${funnel.id}`
+  const backLabel = cameFromList ? 'Back to funnels' : 'Back to detail'
+
   const TABS: Array<{ id: 'steps' | 'plans' | 'meta'; label: string; count?: number }> = [
     { id: 'steps', label: 'Steps', count: steps.length },
     { id: 'plans', label: 'Plans', count: planOptions.length },
@@ -391,10 +395,10 @@ function EditExisting({ funnel, steps }: { funnel: Funnel; steps: FunnelStep[] }
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <Link to={`/funnels/${funnel.id}`} className="inline-flex items-center gap-2 text-sm text-tertiary hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back to detail
+        <Link to={backTo} className="inline-flex items-center gap-2 text-sm text-tertiary hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> {backLabel}
         </Link>
-        <Button onClick={() => navigate(`/funnels/${funnel.id}`)} variant="outline" size="sm">
+        <Button onClick={() => navigate(backTo)} variant="outline" size="sm">
           Done
         </Button>
       </div>
