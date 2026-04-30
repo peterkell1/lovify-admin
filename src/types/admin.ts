@@ -75,3 +75,18 @@ export interface UserVideo {
   song_id: string
   vision_id: string
 }
+
+export interface UserFeedbackEntry {
+  id: string
+  user_id: string | null
+  feedback_type: string
+  message: string | null
+  trigger: string
+  needs_review: boolean
+  reviewed_at: string | null
+  metadata: Record<string, unknown> | null
+  created_at: string
+  // joined
+  user_email: string | null
+  user_display_name: string | null
+}

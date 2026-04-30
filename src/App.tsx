@@ -13,6 +13,7 @@ import ModerationPage from '@/pages/ModerationPage'
 import AnalyticsPage from '@/pages/AnalyticsPage'
 import SettingsPage from '@/pages/SettingsPage'
 import AuditLogPage from '@/pages/AuditLogPage'
+import FeedbackPage from '@/pages/FeedbackPage'
 import FunnelsPage from '@/pages/FunnelsPage'
 import FunnelDetailPage from '@/pages/FunnelDetailPage'
 import FunnelEditPage from '@/pages/FunnelEditPage'
@@ -58,6 +59,7 @@ export default function App() {
             <Route path="moderation" element={<ModerationPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="audit" element={<AuditLogPage />} />
+            <Route path="feedback" element={<FeedbackPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

@@ -8,6 +8,7 @@ import {
   DollarSign,
   BarChart3,
   ClipboardList,
+  MessageSquare,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -22,6 +23,7 @@ const navItems = [
   { to: '/finance', icon: DollarSign, label: 'Finance' },
   // { to: '/moderation', icon: Shield, label: 'Moderation' }, // TODO: enable when moderate-prompt edge function is fixed
   { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/feedback', icon: MessageSquare, label: 'Feedback' },
   { to: '/audit', icon: ClipboardList, label: 'Audit Log' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
