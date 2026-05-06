@@ -2,34 +2,49 @@ import { NavLink } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
+  Sparkles,
+  HeartPulse,
+  TrendingUp,
+  Trophy,
   Users,
   Music,
-  Megaphone,
   DollarSign,
+  Megaphone,
   BarChart3,
   ClipboardList,
   MessageSquare,
   Settings,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Archive,
 } from 'lucide-react'
 import { useState } from 'react'
 
-const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+const mainNavItems = [
+  { to: '/', icon: Sparkles, label: 'Product Health' },
+  { to: '/business-health', icon: HeartPulse, label: 'Business Health' },
+  { to: '/growth', icon: TrendingUp, label: 'Growth' },
+  { to: '/vanity', icon: Trophy, label: 'Vanity' },
   { to: '/users', icon: Users, label: 'Users' },
   { to: '/content', icon: Music, label: 'Content' },
-  { to: '/funnels', icon: Megaphone, label: 'Funnels' },
-  { to: '/finance', icon: DollarSign, label: 'Finance' },
   // { to: '/moderation', icon: Shield, label: 'Moderation' }, // TODO: enable when moderate-prompt edge function is fixed
-  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/feedback', icon: MessageSquare, label: 'Feedback' },
   { to: '/audit', icon: ClipboardList, label: 'Audit Log' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
+// Sunsetted pages — kept accessible but de-emphasized.
+const outdatedItems = [
+  { to: '/overview', icon: LayoutDashboard, label: 'Overview' },
+  { to: '/funnels', icon: Megaphone, label: 'Funnels' },
+  { to: '/finance', icon: DollarSign, label: 'Finance (legacy)' },
+  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+]
+
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const [outdatedOpen, setOutdatedOpen] = useState(false)
 
   return (
     <aside
@@ -53,8 +68,8 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-4 space-y-1 px-3">
-        {navItems.map((item) => (
+      <nav className="flex-1 py-4 space-y-1 px-3 overflow-y-auto">
+        {mainNavItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -72,6 +87,53 @@ export function Sidebar() {
             {!collapsed && <span>{item.label}</span>}
           </NavLink>
         ))}
+
+        {/* Outdated section — collapsible */}
+        <div className="pt-3 mt-3 border-t border-sidebar-border/50">
+          <button
+            onClick={() => setOutdatedOpen((o) => !o)}
+            className={cn(
+              'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 text-sidebar-foreground/40 hover:bg-sidebar-muted hover:text-sidebar-foreground/70 cursor-pointer'
+            )}
+            title="Sunsetted pages — kept around but not in active use"
+          >
+            <Archive className="h-[16px] w-[16px] shrink-0" />
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left uppercase tracking-wider">Outdated</span>
+                <ChevronDown
+                  className={cn(
+                    'h-3 w-3 transition-transform',
+                    outdatedOpen && 'rotate-180'
+                  )}
+                />
+              </>
+            )}
+          </button>
+
+          {outdatedOpen && (
+            <div className="mt-1 space-y-1">
+              {outdatedItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150',
+                      collapsed ? '' : 'pl-8',
+                      isActive
+                        ? 'bg-sidebar-muted text-sidebar-foreground/80'
+                        : 'text-sidebar-foreground/40 hover:bg-sidebar-muted hover:text-sidebar-foreground/70'
+                    )
+                  }
+                >
+                  <item.icon className="h-[15px] w-[15px] shrink-0" />
+                  {!collapsed && <span>{item.label}</span>}
+                </NavLink>
+              ))}
+            </div>
+          )}
+        </div>
       </nav>
 
       {/* Collapse toggle */}
