@@ -9,6 +9,7 @@ import {
   useCohortSummary,
   type ProductFilters,
 } from './use-product-dashboard'
+import { useReleaseAnnotations } from './use-release-annotations'
 import type { DashboardSnapshot } from '@/lib/cro-prompts'
 
 export function useDashboardSnapshot(filters: ProductFilters): {
@@ -22,6 +23,13 @@ export function useDashboardSnapshot(filters: ProductFilters): {
   const songsPerActive = useSongsPerActiveUser(filters)
   const plays = usePlaysDistribution(filters)
   const funnel = useOnboardingFunnel(filters)
+  // Last 60 days of releases — enough context for the AI to correlate
+  const sinceForReleases = useMemo(() => {
+    const d = new Date()
+    d.setDate(d.getDate() - 60)
+    return d.toISOString()
+  }, [])
+  const releases = useReleaseAnnotations({ since: sinceForReleases })
 
   const isLoading =
     cohort.isLoading ||
@@ -125,6 +133,12 @@ export function useDashboardSnapshot(filters: ProductFilters): {
         : undefined,
       playsDistribution: plays.data,
       blockers,
+      recentReleases: (releases.data ?? []).slice(0, 30).map((r) => ({
+        occurredAt: r.occurred_at,
+        title: r.title,
+        description: r.description,
+        kind: r.kind,
+      })),
     }
   }, [
     cohort.data,
@@ -134,6 +148,7 @@ export function useDashboardSnapshot(filters: ProductFilters): {
     songsPerActive.data,
     plays.data,
     funnel.data,
+    releases.data,
     filters.cohortFrom,
     filters.cohortTo,
   ])

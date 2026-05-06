@@ -7,11 +7,12 @@ import { CausalChain } from '@/components/product/CausalChain'
 import { EngagementGrid } from '@/components/product/EngagementGrid'
 import { OnboardingFunnel } from '@/components/product/OnboardingFunnel'
 import { CroChatDrawer, CroChatLauncher } from '@/components/product/CroChatDrawer'
+import { MostImportantThing } from '@/components/product/MostImportantThing'
 
 export default function ProductDashboardPage() {
   const [filters, setFilters] = useState<ProductFilters>(() => defaultProductFilters())
   const [chatOpen, setChatOpen] = useState(false)
-  const { snapshot } = useDashboardSnapshot(filters)
+  const { snapshot, isLoading: snapshotLoading } = useDashboardSnapshot(filters)
 
   return (
     <div className="space-y-6">
@@ -21,6 +22,13 @@ export default function ProductDashboardPage() {
           Is the product working for the users we have?
         </p>
       </div>
+
+      {/* TOP — what to do this week, AI directive */}
+      <MostImportantThing
+        snapshot={snapshot}
+        snapshotLoading={snapshotLoading}
+        onDiscuss={() => setChatOpen(true)}
+      />
 
       <ProductFiltersBar filters={filters} onChange={setFilters} />
 

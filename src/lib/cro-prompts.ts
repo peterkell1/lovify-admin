@@ -117,6 +117,126 @@ export interface DashboardSnapshot {
   songsPerActiveUser?: { ratio: number; songs: number; activeUsers: number }
   playsDistribution?: { label: string; count: number }[]
   blockers: string[]
+  /** Recent product releases — used for "did our last push affect X?" queries. */
+  recentReleases?: {
+    occurredAt: string // ISO
+    title: string
+    description: string | null
+    kind: string
+  }[]
+}
+
+// ─── Most Important Thing ────────────────────────────────────────
+//
+// Used by the always-on executive-summary panel at the top of the dashboard.
+// Forces the model to pick ONE thing — no priority lists, no "three areas to
+// look at". The founder is busy and needs a directive, not options.
+
+const MIT_FORMAT_RULES = `# Output format — STRICT
+
+Use this exact markdown structure. Output nothing before the headline; nothing after the brainstorm.
+
+## [Punchy 4–10 word headline naming the SINGLE biggest leak right now]
+
+[One sentence on why this is the highest-leverage thing to fix this week. Be specific with numbers from the snapshot.]
+
+### Try this first
+
+1. **[Concrete action — verb-led]** — [one sentence on why / what to look for]
+2. **[Action]** — [why]
+3. **[Action]** — [why]
+
+### Brainstorm: 3 ways to fix it
+
+- [A specific intervention — be concrete, not "improve onboarding"]
+- [Another specific intervention — different angle]
+- [A third — different angle from the first two]
+
+# Tone rules
+
+- Pick ONE leak. Not three "in priority order". Not "two areas to investigate". ONE.
+- The headline must name the leak (e.g. "Signup → first song is broken: 76% drop") — not generic ("Focus on activation").
+- Brainstorm items must be specific things to *try*, not categories ("Add inline coaching" not "improve UX").
+- If the highest-leverage thing is fixing instrumentation (e.g. user_sessions empty), say that — it unblocks observability for everything else and is often a one-line code change.
+- Do NOT recap the dashboard. The founder is looking at it.
+- Do NOT say "based on the data" or "the snapshot shows". Just state what's true.`
+
+export function buildMITSystemPrompt(snapshot: DashboardSnapshot): string {
+  return [CRO_SYSTEM_PROMPT, '', buildSnapshotSection(snapshot), '', MIT_FORMAT_RULES].join('\n')
+}
+
+function buildSnapshotSection(snapshot: DashboardSnapshot): string {
+  const lines: string[] = []
+  lines.push('# Live dashboard snapshot')
+  lines.push('')
+  lines.push(
+    `**Cohort window:** ${snapshot.cohort.from} → ${snapshot.cohort.to} · ${snapshot.cohort.size} real users (${snapshot.cohort.excludedTestUsers} test/internal auto-excluded${snapshot.cohort.manuallyExcluded > 0 ? `, ${snapshot.cohort.manuallyExcluded} manually excluded` : ''})`
+  )
+  lines.push('')
+
+  if (snapshot.funnel) {
+    const f = snapshot.funnel
+    lines.push('**Onboarding funnel (this cohort):**')
+    lines.push(`- Signed up: ${f.signedUp}`)
+    lines.push(`- Made first song: ${f.firstSong}`)
+    lines.push(`- Made first vision: ${f.firstVision}`)
+    lines.push(`- Ran out of credits: ${f.exhaustedCredits}`)
+    lines.push(`- Subscribed: ${f.subscribed}`)
+    lines.push('')
+  }
+
+  lines.push('**Causal-chain metrics:**')
+  if (snapshot.activation) {
+    lines.push(
+      `- Activation rate: ${(snapshot.activation.rate * 100).toFixed(1)}% (${snapshot.activation.activated} of ${snapshot.activation.cohortSize}). Healthy 30–50%.`
+    )
+  }
+  if (snapshot.habit) {
+    lines.push(
+      `- Habit formation: ${(snapshot.habit.rate * 100).toFixed(1)}% (${snapshot.habit.formed} of ${snapshot.habit.activated}). Healthy 40–60%.`
+    )
+  }
+  if (snapshot.retention) {
+    lines.push(
+      `- D7 retention: ${(snapshot.retention.d7.rate * 100).toFixed(1)}% (${snapshot.retention.d7.retained} of ${snapshot.retention.d7.eligible}). Healthy 25–40%.`
+    )
+    lines.push(
+      `- D30 retention: ${(snapshot.retention.d30.rate * 100).toFixed(1)}% (${snapshot.retention.d30.retained} of ${snapshot.retention.d30.eligible}). Healthy 15–25%.`
+    )
+    lines.push(
+      `- D90 retention: ${(snapshot.retention.d90.rate * 100).toFixed(1)}% (${snapshot.retention.d90.retained} of ${snapshot.retention.d90.eligible}). Healthy 8–15%.`
+    )
+  }
+  lines.push('')
+
+  if (snapshot.reListenRate) {
+    lines.push(
+      `**Re-listen rate:** ${(snapshot.reListenRate.rate * 100).toFixed(1)}% (${snapshot.reListenRate.replayed} of ${snapshot.reListenRate.total} songs played 3+ times). Healthy 30%+.`
+    )
+  }
+  if (snapshot.songsPerActiveUser) {
+    lines.push(
+      `**Songs per active user (28d):** ${snapshot.songsPerActiveUser.ratio.toFixed(2)} (${snapshot.songsPerActiveUser.songs} ÷ ${snapshot.songsPerActiveUser.activeUsers}). Healthy 0.5+.`
+    )
+  }
+  lines.push('')
+
+  if (snapshot.blockers.length > 0) {
+    lines.push('**Data blockers (instrumentation gaps):**')
+    for (const b of snapshot.blockers) lines.push(`- ${b}`)
+    lines.push('')
+  }
+
+  if (snapshot.recentReleases && snapshot.recentReleases.length > 0) {
+    lines.push('**Recent product releases:**')
+    for (const r of snapshot.recentReleases.slice(0, 10)) {
+      const date = r.occurredAt.split('T')[0]
+      lines.push(`- ${date} · [${r.kind}] ${r.title}`)
+    }
+    lines.push('')
+  }
+
+  return lines.join('\n')
 }
 
 export function buildChatSystemPrompt(snapshot: DashboardSnapshot): string {
@@ -199,6 +319,21 @@ export function buildChatSystemPrompt(snapshot: DashboardSnapshot): string {
     for (const b of snapshot.blockers) {
       lines.push(`- ${b}`)
     }
+    lines.push('')
+  }
+
+  if (snapshot.recentReleases && snapshot.recentReleases.length > 0) {
+    lines.push('**Recent product releases** (overlay on the daily-trend chart):')
+    for (const r of snapshot.recentReleases) {
+      const date = r.occurredAt.split('T')[0]
+      lines.push(
+        `- ${date} · [${r.kind}] ${r.title}${r.description ? ' — ' + r.description : ''}`
+      )
+    }
+    lines.push('')
+    lines.push(
+      'When the founder asks "did our last release affect X" or "what changed when Y dipped", correlate against the dates above. Be specific: name the release, name the metric, give the directional change. If you can\'t tell from the data, say so.'
+    )
     lines.push('')
   }
 
