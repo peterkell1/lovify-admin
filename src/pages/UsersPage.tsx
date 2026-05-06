@@ -9,6 +9,8 @@ import { SkeletonUserRow } from '@/components/ui/skeleton'
 import { Pagination } from '@/components/ui/pagination'
 import { formatDate, formatNumber } from '@/lib/utils'
 import { Search } from 'lucide-react'
+import { ExcludeUserButton } from '@/components/users/ExcludeUserButton'
+import { useExcludedUserIds } from '@/hooks/use-user-exclusions'
 
 export default function UsersPage() {
   const [search, setSearch] = useState('')
@@ -17,6 +19,7 @@ export default function UsersPage() {
   const navigate = useNavigate()
 
   const { data, isLoading } = useUsers({ search, page, pageSize })
+  const { data: excludedIds } = useExcludedUserIds()
   const users = data?.users ?? []
   const total = data?.total ?? 0
   const totalPages = Math.ceil(total / pageSize)
@@ -64,6 +67,7 @@ export default function UsersPage() {
                 <TableHead>Credits</TableHead>
                 <TableHead>Tier</TableHead>
                 <TableHead>Joined</TableHead>
+                <TableHead className="w-20 text-right">Hide</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -71,41 +75,52 @@ export default function UsersPage() {
                 Array.from({ length: 8 }).map((_, i) => <SkeletonUserRow key={i} />)
               ) : users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-tertiary py-12">
+                  <TableCell colSpan={5} className="text-center text-tertiary py-12">
                     No users found
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map((user) => (
-                  <TableRow
-                    key={user.id}
-                    className="cursor-pointer"
-                    onClick={() => navigate(`/users/${user.id}`)}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar
-                          src={user.avatar_url}
-                          fallback={user.display_name || user.email || 'U'}
-                          size="sm"
-                        />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {user.display_name || 'No name'}
-                          </p>
-                          <p className="text-xs text-tertiary">{user.email}</p>
+                users.map((user) => {
+                  const isExcluded = excludedIds?.has(user.id) ?? false
+                  return (
+                    <TableRow
+                      key={user.id}
+                      className={`cursor-pointer ${isExcluded ? 'opacity-50' : ''}`}
+                      onClick={() => navigate(`/users/${user.id}`)}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar
+                            src={user.avatar_url}
+                            fallback={user.display_name || user.email || 'U'}
+                            size="sm"
+                          />
+                          <div>
+                            <p className="font-medium text-sm">
+                              {user.display_name || 'No name'}
+                              {isExcluded && (
+                                <span className="ml-2 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                                  · excluded
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-tertiary">{user.email}</p>
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {formatNumber(user.credit_balance)}
-                    </TableCell>
-                    <TableCell>{tierBadge(user.subscription_tier)}</TableCell>
-                    <TableCell className="text-sm text-tertiary">
-                      {formatDate(user.created_at)}
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {formatNumber(user.credit_balance)}
+                      </TableCell>
+                      <TableCell>{tierBadge(user.subscription_tier)}</TableCell>
+                      <TableCell className="text-sm text-tertiary">
+                        {formatDate(user.created_at)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <ExcludeUserButton userId={user.id} />
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
