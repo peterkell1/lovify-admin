@@ -26,7 +26,7 @@ Copy the ticket's "Prompt to Claude" block into a new chat (along with `CLAUDE.m
 
 Pure admin-panel changes. No lovifymusic edits. No new migrations. Safe to ship without affecting consumer app.
 
-### ⬜ Ticket 1 — Navigation shell revamp
+### ✅ Ticket 1 — Navigation shell revamp
 
 **Goal:** Replace the current sidebar-only nav with two-tier nav (top bar = 4 dashboards, sidebar = ops). Sidebar collapsed by default on dashboard routes.
 
@@ -402,19 +402,260 @@ These need lovifymusic player/onboarding changes and an iOS/Capacitor release. E
 **Blocker:** Needs mobile release.
 **Unlocks:** North Star metric · Skip rate · True listening minutes · Strict Activation definition · Listening-minutes heatmap
 
-**Scope:**
-- New migration: `playback_events (user_id, content_id, content_type, started_at, ended_at, duration_seconds, completed_at_least_30s)`
-- RLS: users insert own rows; admins read all
-- Edit `src/hooks/usePlayTracking.ts` in lovifymusic to write row on every pause/stop/skip (not just first play)
-- Aggregator: nightly cron rolls up per-user-per-day for fast dashboard queries
-- Wait 28 days post-ship before North Star is meaningful
+> ⚠️ **HIGHEST RISK TICKET IN THE PROJECT.** This edits the audio player — the most critical code path in lovifymusic. A bug here breaks audio for every user. Read the full architecture below before starting.
 
-**Tests to run after:**
-- [ ] One play in mobile app → row in `playback_events` with correct duration
-- [ ] Pause + resume creates 2 rows
-- [ ] Skip <30s flagged correctly
-- [ ] Aggregator rollup matches raw sum
+#### Architecture Overview
+
+The naive approach (one API call per play/pause/skip) does NOT work. We use a **3-layer architecture**:
+
+```
+┌─────────────────────────┐
+│ 1. Mobile App           │
+│   Buffer in memory      │  ← collects play/pause/skip in JS array
+│   Flush every 30 sec    │  ← one API call per batch
+└──────────┬──────────────┘
+           │ batched insert (50+ rows in one call)
+           ▼
+┌─────────────────────────┐
+│ 2. playback_events      │  ← raw rows, partitioned by month
+│   (forensics + recovery)│     90-day retention, then drop partition
+└──────────┬──────────────┘
+           │ nightly cron at 2 AM
+           ▼
+┌─────────────────────────┐
+│ 3. playback_daily_      │  ← one row per user per day
+│   rollup                │     dashboard reads ONLY from here
+│   (kept forever, tiny)  │
+└─────────────────────────┘
+```
+
+**Why this design:**
+- Batching = 50x fewer API calls, no audio stutter from network waits
+- Rollup = dashboard loads in <500ms regardless of raw table size
+- Partitioning = retention deletes are instant (`DROP PARTITION` not `DELETE`)
+- Cost at 10K users: ~$2–5/month total. See feasibility-report.md for math.
+
+#### Scope
+
+**1. Database — new migration in `lovifymusic/supabase/migrations/`**
+
+```sql
+-- Raw events table, partitioned by month
+CREATE TABLE playback_events (
+  id BIGSERIAL,
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  content_id UUID NOT NULL,
+  content_type TEXT NOT NULL CHECK (content_type IN ('song', 'vision', 'video')),
+  event_type TEXT NOT NULL CHECK (event_type IN ('play', 'pause', 'skip', 'end')),
+  started_at TIMESTAMPTZ NOT NULL,
+  ended_at TIMESTAMPTZ,
+  duration_seconds INT,
+  completed_at_least_30s BOOLEAN GENERATED ALWAYS AS (duration_seconds >= 30) STORED,
+  metadata JSONB,  -- flexible bag: device, app_version, network_type, etc.
+  PRIMARY KEY (id, started_at)
+) PARTITION BY RANGE (started_at);
+
+-- Create initial partitions (current + next 3 months)
+-- Use pg_partman extension OR cron to auto-create monthly partitions
+
+-- Indexes — ONLY what dashboard + rollup query
+CREATE INDEX idx_playback_user_day ON playback_events(user_id, (started_at::date));
+CREATE INDEX idx_playback_content ON playback_events(content_id);
+
+-- RLS
+ALTER TABLE playback_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "users insert own playback" ON playback_events
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "admins read all playback" ON playback_events
+  FOR SELECT TO authenticated USING (has_role(auth.uid(), 'admin'));
+
+-- Rollup table (small, indexed, dashboard reads from here)
+CREATE TABLE playback_daily_rollup (
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  day DATE NOT NULL,
+  total_seconds INT NOT NULL DEFAULT 0,
+  total_plays INT NOT NULL DEFAULT 0,
+  total_skips INT NOT NULL DEFAULT 0,  -- duration < 30s
+  total_completes INT NOT NULL DEFAULT 0,  -- duration >= 30s
+  unique_songs INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, day)
+);
+CREATE POLICY "admins read rollup" ON playback_daily_rollup
+  FOR SELECT TO authenticated USING (has_role(auth.uid(), 'admin'));
+```
+
+**2. Nightly rollup cron (pg_cron extension)**
+
+```sql
+SELECT cron.schedule(
+  'playback_daily_rollup',
+  '0 2 * * *',  -- 2 AM daily
+  $$
+    INSERT INTO playback_daily_rollup (user_id, day, total_seconds, total_plays, total_skips, total_completes, unique_songs)
+    SELECT
+      user_id,
+      started_at::date AS day,
+      COALESCE(sum(duration_seconds), 0),
+      count(*) FILTER (WHERE event_type = 'play'),
+      count(*) FILTER (WHERE duration_seconds < 30),
+      count(*) FILTER (WHERE duration_seconds >= 30),
+      count(DISTINCT content_id)
+    FROM playback_events
+    WHERE started_at::date = (now() - interval '1 day')::date
+    GROUP BY user_id, started_at::date
+    ON CONFLICT (user_id, day) DO UPDATE SET
+      total_seconds = EXCLUDED.total_seconds,
+      total_plays = EXCLUDED.total_plays,
+      total_skips = EXCLUDED.total_skips,
+      total_completes = EXCLUDED.total_completes,
+      unique_songs = EXCLUDED.unique_songs;
+  $$
+);
+```
+
+**3. Retention cron (weekly)**
+
+```sql
+SELECT cron.schedule(
+  'playback_events_retention',
+  '0 3 * * 0',  -- 3 AM every Sunday
+  $$ DROP TABLE IF EXISTS playback_events_y2026m02 $$  -- example, automate based on age
+);
+```
+
+Drop partitions older than 90 days. Faster than `DELETE`. **Rollup is kept forever.**
+
+**4. Mobile app changes — `lovifymusic/src/hooks/usePlayTracking.ts`**
+
+Critical patterns to follow:
+
+```js
+// In-memory buffer, flush every 30s OR on app background
+let buffer = []
+let flushTimer = null
+
+function trackEvent(event) {
+  try {
+    buffer.push(event)
+    if (!flushTimer) {
+      flushTimer = setTimeout(flush, 30000)
+    }
+  } catch (e) {
+    console.error('tracking failed', e)  // never throw — never break audio
+  }
+}
+
+async function flush() {
+  if (buffer.length === 0) return
+  const batch = buffer
+  buffer = []
+  flushTimer = null
+  try {
+    await supabase.from('playback_events').insert(batch)  // ONE call, many rows
+  } catch (e) {
+    console.error('flush failed', e)  // accept data loss over crashing audio
+  }
+}
+
+// Flush on app background (iOS suspends JS otherwise)
+App.addListener('appStateChange', ({ isActive }) => {
+  if (!isActive) flush()
+})
+
+// Last-gasp on app close
+window.addEventListener('beforeunload', () => {
+  if (buffer.length > 0) {
+    navigator.sendBeacon('/api/playback-flush', JSON.stringify(buffer))
+  }
+})
+```
+
+**Mandatory rules for player code changes:**
+1. ✅ Wrap every tracking call in `try/catch` — tracking failures must NEVER break playback
+2. ✅ Fire-and-forget on writes — never `await` inside an audio event handler
+3. ✅ Batch in memory, flush every 30s — never insert per event
+4. ✅ Flush on `appStateChange → background` (iOS suspends JS)
+5. ✅ Use `sendBeacon` for app-close flushes (survives where `fetch` dies)
+6. ✅ Add `playback_tracking_enabled` flag in `feature_flags` table — kill switch from admin
+
+**5. Staged rollout plan**
+
+- Day 0: Ship with `playback_tracking_enabled = false` for everyone
+- Day 1: Enable for 5% of users (random by `user_id` hash) → watch crash reports for 24h
+- Day 3: Expand to 25% → watch for 48h
+- Day 7: Expand to 100% if no spike in player-related errors
+- **Kill switch:** admin can flip flag in Settings to disable instantly
+
+**6. Admin panel — wire up Product Dashboard**
+
+- Replace North Star placeholder (Ticket 7) with real query against `playback_daily_rollup`
+- Update Activation Rate to use `completed_at_least_30s = true` instead of any-play
+- Add Skip Rate tile
+- Add true Listening-Minutes heatmap
+- Wait 28 days post-rollout before North Star numbers are meaningful — show "Collecting data — meaningful from {date}" until then
+
+#### Tests to run after
+
+**Database:**
+- [ ] Migration applies cleanly on staging
+- [ ] Partitions auto-create for next 3 months
+- [ ] RLS prevents user A from reading user B's events
+- [ ] RLS allows admin to read all
+- [ ] Rollup cron runs at 2 AM, populates rollup table for prior day
+- [ ] Manual rollup re-run is idempotent (ON CONFLICT works)
+- [ ] Retention cron drops partitions older than 90 days
+
+**Mobile player:**
+- [ ] One play → buffered, flushed within 30s, row in `playback_events` with correct duration
+- [ ] Pause + resume = 2 rows (one play, one pause)
+- [ ] Skip <30s → `completed_at_least_30s = false`
+- [ ] App backgrounded mid-buffer → flush fires, no data loss
+- [ ] Network offline → tracking fails silently, audio keeps playing
+- [ ] Throw error inside `flush()` → audio still plays (try/catch holds)
+- [ ] 100 plays in a row → only ~3–4 API calls (batched), not 100
+
+**Staged rollout:**
+- [ ] Feature flag disabled by default
+- [ ] 5% rollout: hash bucket logic correct, only ~5% of users send events
+- [ ] Crash rate in Sentry/Crashlytics does NOT spike post-rollout
+- [ ] Admin kill switch: flipping flag stops new events within 1 minute
+
+**Dashboard:**
+- [ ] Rollup matches sum of raw events for a sample user/day
 - [ ] North Star tile shows real number after 28 days
+- [ ] Skip rate tile populates
+- [ ] Heatmap shows reasonable distribution (not all in one hour)
+
+**Cost monitoring (post-rollout):**
+- [ ] Supabase API calls < 1M/day at full rollout
+- [ ] `playback_events` table growth tracks expectations (~600K rows/day per 10K users)
+- [ ] Dashboard query times < 1s
+
+**Prompt to Claude:**
+```
+Read CLAUDE.md + new-updates-admin/* for context, especially the
+full Ticket 13 architecture in phase-admin-update.md.
+
+Work on Ticket 13 — Playback events instrumentation.
+
+CRITICAL RULES (do not skip):
+1. Mobile player code changes use try/catch on every tracking call —
+   tracking failures must never break audio.
+2. Never await network calls inside audio event handlers — buffer
+   in memory, flush every 30s.
+3. Database design = raw events (partitioned, 90-day retention) +
+   nightly rollup (kept forever, dashboard reads from here only).
+4. Ship behind feature_flags.playback_tracking_enabled with staged
+   rollout: 5% → 25% → 100% over 1 week.
+5. Add admin kill switch in Settings for the feature flag.
+
+Start with the migration + rollup cron (zero risk to consumer app).
+Then mobile player changes behind the feature flag (off by default).
+Then admin Settings toggle for the kill switch.
+Last: wire up Product Dashboard tiles to read from rollup table.
+
+Don't ship to 100% on Friday — give yourself a week of monitoring.
+```
 
 ---
 
@@ -423,10 +664,22 @@ These need lovifymusic player/onboarding changes and an iOS/Capacitor release. E
 **Blocker:** Needs mobile release.
 **Unlocks:** Session length distribution · "Meaningful session" metric
 
+> Follow the same architecture patterns as Ticket 13 (batching, partitioning, rollup, try/catch, feature flag). This table will be smaller (1–3 sessions/user/day vs hundreds of plays), so monthly partitioning is fine and rollup may be optional. Reuse the kill-switch + staged-rollout playbook.
+
 **Scope:**
-- New migration: `session_events (user_id, started_at, ended_at, duration_seconds)`
-- Mobile: write row on app foreground → background transition
-- iOS: handle backgrounding edge cases
+- New migration: `session_events (user_id, started_at, ended_at, duration_seconds)` — partitioned by month, RLS like playback_events
+- Optional rollup: `session_daily_rollup (user_id, day, session_count, total_seconds, longest_session_seconds)` — only if dashboard queries get slow
+- Mobile: write row on app foreground → background transition (Capacitor `App.addListener('appStateChange')`)
+- iOS: handle backgrounding edge cases — flush on suspend, handle "killed by OS" gracefully (no `ended_at`)
+- Behind `session_tracking_enabled` feature flag, same staged rollout as Ticket 13
+- Wrap all writes in try/catch — must never break app launch/background
+
+**Tests to run after:**
+- [ ] App foreground → background creates one row with correct duration
+- [ ] App killed by OS → row exists with `ended_at = NULL` (handle in dashboard query)
+- [ ] Throwing inside session handler does not crash app
+- [ ] Feature flag off → no rows written
+- [ ] Session length histogram on Product Dashboard renders correctly
 
 ---
 
@@ -435,10 +688,21 @@ These need lovifymusic player/onboarding changes and an iOS/Capacitor release. E
 **Blocker:** Needs mobile release.
 **Unlocks:** Share rate · Shares per sharing user · Platform breakdown · Sharer vs non-sharer retention
 
+> Follow the same patterns as Ticket 13 (try/catch, feature flag, RLS). Share events are very low volume (a few per active user per week), so batching/rollup are NOT needed here — direct insert is fine. Partitioning is also overkill at this scale.
+
 **Scope:**
-- New migration: `share_events (user_id, content_id, content_type, platform, shared_at)`
-- Frontend: update `src/lib/analytics.ts > trackShare()` in lovifymusic to also write to Supabase
-- Growth Dashboard: replace placeholders with real charts
+- New migration: `share_events (user_id, content_id, content_type, platform, shared_at, metadata JSONB)` — flat table, indexed on `(user_id, shared_at)` and `(content_id)`, RLS: users insert own, admins read all
+- Frontend: update `src/lib/analytics.ts > trackShare()` in lovifymusic to also write to Supabase (in addition to GA4)
+- Wrap insert in try/catch + fire-and-forget — share UX must never block on the write
+- Behind `share_tracking_enabled` feature flag (lower risk than playback, but still flag-gated for safety)
+- Growth Dashboard: replace placeholders with real charts (share rate, shares per sharer, platform pie)
+
+**Tests to run after:**
+- [ ] User shares a song → row in `share_events` with platform captured
+- [ ] Throwing inside trackShare does not block the share dialog
+- [ ] GA4 event still fires alongside Supabase write
+- [ ] Feature flag off → no DB rows but GA4 still fires
+- [ ] Growth Dashboard tiles render real numbers
 
 ---
 
@@ -513,7 +777,7 @@ Each one has cost (paid SDK or API access) and security implications. Treat as s
 
 _(Append one line per completed ticket: ticket number · date · short note · PR link if any)_
 
-- _(none yet)_
+- **Ticket 1 · 2026-05-12** · Navigation shell revamp. Single dark-brown navbar with centered dashboard tabs (Product/Business Health/Growth/Vanity) + user controls on the right. Hamburger in sidebar header. Ops sidebar items only (Users/Content/Funnels/Subscriptions/Feedback/Audit/Settings). Sidebar collapse state persists per user in localStorage; defaults collapsed on dashboard routes, expanded on ops routes. Placeholder pages created for all 4 dashboards.
 
 ---
 
@@ -521,4 +785,8 @@ _(Append one line per completed ticket: ticket number · date · short note · P
 
 _(Capture decisions made during execution that change the plan. Each entry: date + decision + reason.)_
 
-- _(none yet)_
+- **2026-05-12 — Locked architecture for high-volume event tables (Tickets 13–15).**
+  Decision: 3-layer pattern — (1) in-app memory buffer with 30s flush + flush-on-background, (2) raw events table partitioned by month with 90-day retention, (3) nightly rollup table kept forever, dashboard reads only from rollup.
+  Reason: avoids per-event API calls (50x cost reduction), keeps dashboard queries <1s regardless of raw table size, retention deletes are instant via `DROP PARTITION`. Estimated cost at 10K users: ~$2–5/month.
+  Rejected alternative: pushing raw events to S3 hourly via cron with DB references. Rejected because S3 doesn't solve the dashboard query problem (would need Athena/DuckDB on top), adds operational complexity (IAM, lifecycle, cron infra), and Postgres handles this scale fine for 1–2 years before any archival is needed. S3 is reserved for Phase "post-100K-users" cold storage of partitions older than 90 days.
+  Mandatory rules for any ticket touching consumer-app code: try/catch on every tracking call, never await network in audio/UI handlers, feature-flag-gated with admin kill switch, staged rollout 5% → 25% → 100% over 1 week.

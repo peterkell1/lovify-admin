@@ -5,6 +5,10 @@ import { AdminGuard } from '@/components/auth/AdminGuard'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
+import ProductPage from '@/pages/ProductPage'
+import BusinessHealthPage from '@/pages/BusinessHealthPage'
+import GrowthPage from '@/pages/GrowthPage'
+import VanityPage from '@/pages/VanityPage'
 import UsersPage from '@/pages/UsersPage'
 import UserDetailPage from '@/pages/UserDetailPage'
 import ContentPage from '@/pages/ContentPage'
@@ -45,7 +49,11 @@ export default function App() {
               </AdminGuard>
             }
           >
-            <Route index element={<DashboardPage />} />
+            <Route index element={<ProductPage />} />
+            <Route path="business" element={<BusinessHealthPage />} />
+            <Route path="growth" element={<GrowthPage />} />
+            <Route path="vanity" element={<VanityPage />} />
+            <Route path="old-dashboard" element={<DashboardPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="users/:userId" element={<UserDetailPage />} />
             <Route path="content" element={<ContentPage />} />
