@@ -66,7 +66,7 @@ Audit, Settings) working as-is.
 
 ---
 
-### ⬜ Ticket 2 — Folder restructure + page mapping
+### ✅ Ticket 2 — Folder restructure + page mapping
 
 **Goal:** Move/rename existing pages to match new layout. Subscriptions out of Finance, Credit Economy into Settings, Moderation as Content tab.
 
@@ -773,11 +773,73 @@ Each one has cost (paid SDK or API access) and security implications. Treat as s
 
 ---
 
+## Bug Fixes / Tech Debt
+
+_(Pre-existing issues discovered during the revamp. Not part of the planned phases — fix opportunistically or schedule into a maintenance sprint.)_
+
+### 🟡 Bug-1 — `moderate-prompt` edge function not writing to `content_moderation_log` (fix ready, awaiting deploy)
+
+**Discovered:** 2026-05-13 during Ticket 2 testing.
+**Symptom:** Admin > Content > Moderation tab shows zero rejections across all time ranges.
+**Confirmed via SQL:** `SELECT count(*), max(created_at) FROM content_moderation_log` → `count=0, max=NULL`. Table has never had a row written to it.
+**Repos affected:** `lovifymusic` (edge function lives there). No admin-panel changes needed.
+
+**Root cause (found 2026-05-13):** `moderate-prompt` was the ONLY edge function missing from `lovifymusic/supabase/config.toml`. Without an entry, Supabase defaulted `verify_jwt = true`, so every call from `useContentGuardrail.ts` returned a platform-level 401 BEFORE the handler ran. The client fails open on any error → rejections never reached the handler's `void admin.from('content_moderation_log').insert(...)` call → table stayed empty forever. Confirmed safe to disable because the handler trusts `userId` from request body and writes via `SUPABASE_SERVICE_ROLE_KEY` (no auth dependency).
+
+**Fixes applied (2026-05-13, awaiting deploy + verification):**
+1. Added `[functions.moderate-prompt] verify_jwt = false` block to `lovifymusic/supabase/config.toml`, matching `moderate-comment` pattern. Defensive cleanup (anon/guest callers were 401'd at platform level).
+2. Replaced `void admin.from(...).insert(...)` in `moderate-prompt/index.ts` with `EdgeRuntime.waitUntil(...)` + error logging. Fire-and-forget pattern was killing the insert when the function returned its response. This was the actual cause of LLM-layer rejections never logging.
+3. Replaced `void supabase.from(...).insert(...)` for keyword-layer (Layer 1) logging in `lovifymusic/src/hooks/useContentGuardrail.ts` with a `.then(({ error }) => console.error(...))` pattern so any future RLS / schema failure is visible in the browser console instead of silently swallowed.
+
+**Side discovery (separate follow-up):** `lovifymusic/src/integrations/supabase/types.ts` is stale — `content_moderation_log` exists in production but is missing from generated types. Layer-1 insert needed an `as any` cast as a result. Regenerate types via `npx supabase gen types typescript --project-id pqjqurjdujwforscefov > src/integrations/supabase/types.ts` and remove the cast.
+
+**Still to do before closing:**
+- Deploy edge function: `cd lovifymusic && supabase functions deploy moderate-prompt`
+- Test both layers: keyword-layer trigger ("nude") and LLM-layer trigger (a borderline NSFW description)
+- Verify rows appear in `content_moderation_log` and in the admin Moderation tab
+- If keyword-layer still fails to log, capture the browser console error (the `.then` callback will now expose it) and dig into RLS / column mismatch from there.
+
+**Scope:**
+- Read `lovifymusic/supabase/functions/moderate-prompt/index.ts` — verify each rejection path writes to `content_moderation_log` with the correct columns (`user_id`, `surface`, `layer`, `prompt`, `reason`, `category`).
+- Check RLS on `content_moderation_log` — ensure edge function's service-role or authenticated context can `INSERT`. If the policy only allows admins to read but no one to write, that's the bug.
+- Fix the underlying JWT issue if that's blocking execution.
+- Deploy: `supabase functions deploy moderate-prompt` from lovifymusic.
+- Verify: submit a prompt that should fail guardrails in lovifymusic, then check the admin Moderation tab for the rejection row.
+
+**Tests to run after:**
+- [ ] `SELECT count(*) FROM content_moderation_log` returns > 0 after a known-bad prompt submission
+- [ ] Admin Moderation tab shows the new rejection in "Last 24 hours"
+- [ ] Surface / layer / reason fields populate correctly per row
+- [ ] No silent edge function errors in Supabase function logs
+
+**Prompt to Claude (when ready to tackle):**
+```
+Read CLAUDE.md + new-updates-admin/phase-admin-update.md.
+Work on Bug-1 — fix moderate-prompt edge function logging
+to content_moderation_log.
+
+Context: table has zero rows ever (confirmed via SQL on
+2026-05-13). The admin Moderation tab is wired correctly
+and reads from this table — the bug is upstream in
+lovifymusic/supabase/functions/moderate-prompt/index.ts.
+
+Investigate the rejection paths and either (a) add the
+missing insert call, (b) fix RLS to allow the edge function
+to write, or (c) fix the JWT/auth issue that's blocking
+execution before logging. Don't touch the admin panel.
+
+Once deployed, verify by submitting a known-bad prompt in
+lovifymusic and checking the admin Moderation tab.
+```
+
+---
+
 ## Done
 
 _(Append one line per completed ticket: ticket number · date · short note · PR link if any)_
 
 - **Ticket 1 · 2026-05-12** · Navigation shell revamp. Single dark-brown navbar with centered dashboard tabs (Product/Business Health/Growth/Vanity) + user controls on the right. Hamburger in sidebar header. Ops sidebar items only (Users/Content/Funnels/Subscriptions/Feedback/Audit/Settings). Sidebar collapse state persists per user in localStorage; defaults collapsed on dashboard routes, expanded on ops routes. Placeholder pages created for all 4 dashboards.
+- **Ticket 2 · 2026-05-13** · Folder restructure + page mapping. Created `SubscriptionsPage` (own route `/subscriptions`) and `ContentModerationTab`. Added Credit Economy as 3rd tab in Settings and Moderation as 4th tab in Content. Credit Economy got a date-range selector (7/30/90/365d). Deleted `DashboardPage`, `AnalyticsPage`, `FinancePage`, `ModerationPage` and their routes. Hooks (`use-finance`, `use-dashboard-stats`, `use-analytics`) preserved for Tickets 4–9. Bundle dropped ~92KB. Logged pre-existing Bug-1: `content_moderation_log` table empty (edge function not writing).
 
 ---
 

@@ -3,11 +3,13 @@ import { cn } from '@/lib/utils'
 import { ContentSongsTab } from '@/components/content/ContentSongsTab'
 import { ContentVisionsTab } from '@/components/content/ContentVisionsTab'
 import { ContentVideosTab } from '@/components/content/ContentVideosTab'
+import { ContentModerationTab } from '@/components/content/ContentModerationTab'
 
 const tabs = [
   { id: 'songs', label: 'Songs' },
   { id: 'visions', label: 'Visions' },
   { id: 'videos', label: 'Mind Movies' },
+  { id: 'moderation', label: 'Moderation' },
 ] as const
 
 type TabId = (typeof tabs)[number]['id']
@@ -56,6 +58,7 @@ export default function ContentPage() {
       {activeTab === 'songs' && <ContentSongsTab />}
       {activeTab === 'visions' && <ContentVisionsTab />}
       {activeTab === 'videos' && <ContentVideosTab />}
+      {activeTab === 'moderation' && <ContentModerationTab />}
     </div>
   )
 }

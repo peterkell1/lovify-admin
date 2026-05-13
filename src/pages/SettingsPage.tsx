@@ -9,6 +9,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { formatDate } from '@/lib/utils'
 import { Save, Zap, Gift, Crown, Music, ImageIcon, Film } from 'lucide-react'
 import { toast } from 'sonner'
+import { CreditEconomyTab } from '@/components/finance/CreditEconomyTab'
 
 // ─── Credits Config ───
 
@@ -66,6 +67,7 @@ const HIDDEN_FLAGS = new Set<string>(['credits_enabled'])
 const tabs = [
   { id: 'credits', label: 'Credits Configuration' },
   { id: 'features', label: 'Feature Management' },
+  { id: 'credit-economy', label: 'Credit Economy' },
 ] as const
 
 type TabId = (typeof tabs)[number]['id']
@@ -326,6 +328,7 @@ export default function SettingsPage() {
 
       {activeTab === 'credits' && <CreditsConfigTab />}
       {activeTab === 'features' && <FeatureManagementTab />}
+      {activeTab === 'credit-economy' && <CreditEconomyTab />}
     </div>
   )
 }

@@ -4,7 +4,6 @@ import { Toaster } from 'sonner'
 import { AdminGuard } from '@/components/auth/AdminGuard'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import LoginPage from '@/pages/LoginPage'
-import DashboardPage from '@/pages/DashboardPage'
 import ProductPage from '@/pages/ProductPage'
 import BusinessHealthPage from '@/pages/BusinessHealthPage'
 import GrowthPage from '@/pages/GrowthPage'
@@ -12,9 +11,7 @@ import VanityPage from '@/pages/VanityPage'
 import UsersPage from '@/pages/UsersPage'
 import UserDetailPage from '@/pages/UserDetailPage'
 import ContentPage from '@/pages/ContentPage'
-import FinancePage from '@/pages/FinancePage'
-import ModerationPage from '@/pages/ModerationPage'
-import AnalyticsPage from '@/pages/AnalyticsPage'
+import SubscriptionsPage from '@/pages/SubscriptionsPage'
 import SettingsPage from '@/pages/SettingsPage'
 import AuditLogPage from '@/pages/AuditLogPage'
 import FeedbackPage from '@/pages/FeedbackPage'
@@ -53,19 +50,16 @@ export default function App() {
             <Route path="business" element={<BusinessHealthPage />} />
             <Route path="growth" element={<GrowthPage />} />
             <Route path="vanity" element={<VanityPage />} />
-            <Route path="old-dashboard" element={<DashboardPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="users/:userId" element={<UserDetailPage />} />
             <Route path="content" element={<ContentPage />} />
+            <Route path="subscriptions" element={<SubscriptionsPage />} />
             <Route path="funnels" element={<FunnelsPage />} />
             <Route path="funnels/new/templates" element={<FunnelTemplatesPage />} />
             <Route path="funnels/new" element={<FunnelEditPage mode="create" />} />
             <Route path="funnels/:id" element={<FunnelDetailPage />} />
             <Route path="funnels/:id/edit" element={<FunnelEditPage mode="edit" />} />
             <Route path="funnels/:id/analytics" element={<FunnelAnalyticsPage />} />
-            <Route path="finance" element={<FinancePage />} />
-            <Route path="moderation" element={<ModerationPage />} />
-            <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="audit" element={<AuditLogPage />} />
             <Route path="feedback" element={<FeedbackPage />} />
             <Route path="settings" element={<SettingsPage />} />

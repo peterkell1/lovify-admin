@@ -42,7 +42,7 @@ const layerBadge = (layer: string) => {
   }
 }
 
-export default function ModerationPage() {
+export function ContentModerationTab() {
   const [surface, setSurface] = useState('all')
   const [layer, setLayer] = useState('all')
   const [days, setDays] = useState(7)
@@ -58,7 +58,6 @@ export default function ModerationPage() {
     return rows.filter((r) => r.prompt.toLowerCase().includes(q) || r.reason?.toLowerCase().includes(q))
   }, [rows, search])
 
-  // Stats
   const stats = useMemo(() => {
     if (!rows) return { total: 0, keyword: 0, llm: 0, output: 0 }
     return {
@@ -69,7 +68,6 @@ export default function ModerationPage() {
     }
   }, [rows])
 
-  // Repeat offenders — users with 3+ rejections
   const offenders = useMemo(() => {
     if (!rows) return []
     const countMap = new Map<string, number>()
@@ -85,12 +83,6 @@ export default function ModerationPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Moderation</h1>
-        <p className="text-tertiary text-sm mt-1">Content guardrail rejections and repeat offender detection</p>
-      </div>
-
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Rejections" value={stats.total} icon={<Shield className="h-5 w-5" />} />
         <StatCard title="Keyword (L1)" value={stats.keyword} icon={<Ban className="h-5 w-5" />} subtitle="Regex blocklist" />
@@ -98,7 +90,6 @@ export default function ModerationPage() {
         <StatCard title="Repeat Offenders" value={offenders.length} icon={<AlertTriangle className="h-5 w-5" />} subtitle="3+ rejections" />
       </div>
 
-      {/* Repeat offenders */}
       {offenders.length > 0 && (
         <Card>
           <CardHeader><CardTitle>Repeat Offenders</CardTitle></CardHeader>
@@ -114,7 +105,6 @@ export default function ModerationPage() {
         </Card>
       )}
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-tertiary" />
@@ -131,7 +121,6 @@ export default function ModerationPage() {
         </Select>
       </div>
 
-      {/* Log table */}
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
@@ -177,7 +166,6 @@ export default function ModerationPage() {
         </CardContent>
       </Card>
 
-      {/* Detail dialog */}
       <Dialog open={!!selectedRow} onClose={() => setSelectedRow(null)}>
         <DialogHeader onClose={() => setSelectedRow(null)}>
           <DialogTitle>Rejection Detail</DialogTitle>

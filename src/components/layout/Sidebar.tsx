@@ -15,8 +15,7 @@ const navItems = [
   { to: '/users', icon: Users, label: 'Users' },
   { to: '/content', icon: Music, label: 'Content' },
   { to: '/funnels', icon: Megaphone, label: 'Funnels' },
-  // Ticket 2 will move Finance > Subscriptions tab into its own /subscriptions page.
-  { to: '/finance', icon: CreditCard, label: 'Subscriptions' },
+  { to: '/subscriptions', icon: CreditCard, label: 'Subscriptions' },
   { to: '/feedback', icon: MessageSquare, label: 'Feedback' },
   { to: '/audit', icon: ClipboardList, label: 'Audit Log' },
   { to: '/settings', icon: Settings, label: 'Settings' },
