@@ -356,6 +356,125 @@ export const useMrrTrend = (days = 90) => {
   })
 }
 
+// ─── Cost ratios (Costs tab) ───
+//
+// Three Notion-spec ratios: compute cost per active user, per song, and
+// as a percentage of revenue. All three are computed over the same date
+// range as the rest of the Business Health tab.
+//
+// "Active user" = anyone who had an api_cost row in the window. Tighter
+// than profiles.count and matches the "who actually generated something"
+// definition the cost ratio is meant to express.
+
+export interface CostRatios {
+  totalCostUsd: number
+  totalRevenueUsd: number
+  activeUserCount: number
+  songCount: number
+  costPerUser: number      // dollars per active user
+  costPerSong: number      // dollars per song generated
+  costPctOfRevenue: number // 0-100
+}
+
+export const useCostRatios = (range: DateRange) => {
+  return useQuery({
+    queryKey: ['business-health', 'cost-ratios', range.from, range.to],
+    queryFn: async (): Promise<CostRatios> => {
+      // Convert YYYY-MM-DD → ISO timestamps so the bounds cover whole days.
+      const fromIso = new Date(range.from).toISOString()
+      const toIso = new Date(`${range.to}T23:59:59.999Z`).toISOString()
+
+      const [costsRes, revenueRes, songsRes] = await Promise.all([
+        supabase
+          .from('api_costs')
+          .select('cost_usd, user_id')
+          .gte('created_at', fromIso)
+          .lte('created_at', toIso),
+        supabase
+          .from('daily_pnl_stats')
+          .select('total_revenue_usd')
+          .gte('date', range.from)
+          .lte('date', range.to),
+        supabase
+          .from('generated_songs')
+          .select('id', { count: 'exact', head: true })
+          .gte('created_at', fromIso)
+          .lte('created_at', toIso),
+      ])
+
+      if (costsRes.error) throw costsRes.error
+      if (revenueRes.error) throw revenueRes.error
+      if (songsRes.error) throw songsRes.error
+
+      const totalCostUsd = (costsRes.data ?? []).reduce(
+        (sum, c) => sum + Number(c.cost_usd ?? 0),
+        0,
+      )
+      const totalRevenueUsd = (revenueRes.data ?? []).reduce(
+        (sum, d) => sum + Number(d.total_revenue_usd ?? 0),
+        0,
+      )
+      const activeUserIds = new Set(
+        (costsRes.data ?? [])
+          .map((c) => c.user_id)
+          .filter((id): id is string => typeof id === 'string'),
+      )
+      const activeUserCount = activeUserIds.size
+      const songCount = songsRes.count ?? 0
+
+      return {
+        totalCostUsd,
+        totalRevenueUsd,
+        activeUserCount,
+        songCount,
+        costPerUser: activeUserCount > 0 ? totalCostUsd / activeUserCount : 0,
+        costPerSong: songCount > 0 ? totalCostUsd / songCount : 0,
+        costPctOfRevenue: totalRevenueUsd > 0 ? (totalCostUsd / totalRevenueUsd) * 100 : 0,
+      }
+    },
+    staleTime: STALE,
+  })
+}
+
+// ─── Daily cost breakdown (Costs tab chart) ───
+//
+// Reads from `daily_pnl_stats` instead of raw `api_costs` so the chart
+// covers the full date range without bumping into a 1000+ row API page
+// limit. The rollup table is updated nightly and is what Money tab
+// already uses for revenue + costs — keeping the two tabs consistent.
+
+export interface DailyCostPoint {
+  date: string
+  song: number      // music + text + voice in USD
+  vision: number    // image gen in USD
+  mindMovie: number // video gen in USD
+}
+
+export const useDailyCostBreakdown = (range: DateRange) => {
+  return useQuery({
+    queryKey: ['business-health', 'daily-costs', range.from, range.to],
+    queryFn: async (): Promise<DailyCostPoint[]> => {
+      const { data, error } = await supabase
+        .from('daily_pnl_stats')
+        .select('date, image_costs_usd, video_costs_usd, music_costs_usd, text_costs_usd')
+        .gte('date', range.from)
+        .lte('date', range.to)
+        .order('date', { ascending: true })
+
+      if (error) throw error
+      return (data ?? []).map((d) => ({
+        date: d.date,
+        // Song = music gen + text gen (lyrics-adjacent). Matches the
+        // grouping the old AICostsTab used for `cost_type`-rolled-up flows.
+        song: Number(d.music_costs_usd ?? 0) + Number(d.text_costs_usd ?? 0),
+        vision: Number(d.image_costs_usd ?? 0),
+        mindMovie: Number(d.video_costs_usd ?? 0),
+      }))
+    },
+    staleTime: STALE,
+  })
+}
+
 // ─── Date range helpers ───
 
 export const defaultDateRange = (days = 30): DateRange => {

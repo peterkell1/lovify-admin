@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { MoneyTab } from '@/components/business-health/MoneyTab'
+import { CostsTab } from '@/components/business-health/CostsTab'
 import { DateRangeFilter, rangeFromPreset, type DateRangePresetId } from '@/components/business-health/DateRangeFilter'
 
 const tabs = [
@@ -75,7 +76,7 @@ const BusinessHealthPage = () => {
 
       {activeTab === 'money' && <MoneyTab range={range} />}
       {activeTab === 'unit-economics' && <ComingSoonPanel ticket="Ticket 6" />}
-      {activeTab === 'costs' && <ComingSoonPanel ticket="Ticket 5" />}
+      {activeTab === 'costs' && <CostsTab range={range} />}
     </div>
   )
 }
